@@ -51,11 +51,6 @@
       return o;
     };
     var _parse = JSON.parse;
-    JSON.parse = function () {
-      var r = _parse.apply(this, arguments);
-      try { if (r && typeof r === 'object') strip(r); } catch (e) {}
-      return r;
-    };
     var _ipr;
     try {
       Object.defineProperty(window, 'ytInitialPlayerResponse', {
@@ -64,24 +59,24 @@
         set: function (v) { _ipr = strip(v); }
       });
     } catch (e) {}
+    /* Only touch the player response, and only when it really carries ad data (keeps playback safe). */
     var _fetch = window.fetch;
     if (_fetch) {
       window.fetch = function () {
-        var a = arguments;
-        return _fetch.apply(this, a).then(function (res) {
+        var a = arguments, p = _fetch.apply(this, a), u = '';
+        try { u = (a[0] && a[0].url) || String(a[0]); } catch (e) {}
+        if (!/\/youtubei\/v1\/player(\?|$)/.test(u)) return p;
+        return p.then(function (res) {
           try {
-            var u = (a[0] && a[0].url) || String(a[0]);
-            if (/\/youtubei\/v1\/(player|next|browse|search|reel)/.test(u)) {
-              return res.clone().text().then(function (t) {
-                try {
-                  var j = _parse(t);
-                  strip(j);
-                  return new Response(JSON.stringify(j), { status: res.status, statusText: res.statusText, headers: res.headers });
-                } catch (e) { return res; }
-              });
-            }
-          } catch (e) {}
-          return res;
+            return res.clone().text().then(function (t) {
+              if (t.indexOf('adPlacements') < 0 && t.indexOf('playerAds') < 0 && t.indexOf('adSlots') < 0) return res;
+              try {
+                var j = _parse(t);
+                strip(j);
+                return new Response(JSON.stringify(j), { status: res.status, statusText: res.statusText, headers: res.headers });
+              } catch (e) { return res; }
+            });
+          } catch (e) { return res; }
         });
       };
     }

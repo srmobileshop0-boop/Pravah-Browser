@@ -9,6 +9,8 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Configuration;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -107,7 +109,10 @@ public class MainActivity extends Activity {
     boolean menuOpen = false, uiReady = false, topReady = false;
     JSONArray history = new JSONArray(), bookmarks = new JSONArray();
     JSONObject settings = new JSONObject();
-    String adJs = "", baseUa = "", chromeVer = "120.0.0.0";
+    String adJs = "", darkJs = "", pageScript = "", baseUa = "", chromeVer = "120.0.0.0";
+    boolean introActive = true;
+    JSONArray dls = new JSONArray();
+    Runnable dlPoll;
     View customView;
     WebChromeClient.CustomViewCallback customCb;
     ValueCallback<Uri[]> fileCb;
@@ -126,6 +131,8 @@ public class MainActivity extends Activity {
         sp = getSharedPreferences("pravah", MODE_PRIVATE);
         loadData();
         adJs = readAsset("adblock.js");
+        darkJs = readAsset("darkpage.js");
+        rebuildPageScript();
         String d = WebSettings.getDefaultUserAgent(this);
         baseUa = d.replace("; wv", "").replace(" Version/4.0", "");
         Matcher m = Pattern.compile("Chrome/([\\d.]+)").matcher(d);
@@ -135,6 +142,16 @@ public class MainActivity extends Activity {
         applyTheme();
         restoreTabs();
         handleIntent(getIntent());
+        introStyle();
+        main.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (introActive) {
+                    ui.evaluateJavascript("window.Intro&&Intro.skip()", null);
+                    endIntro();
+                }
+            }
+        }, 6000);
 
         if (Build.VERSION.SDK_INT <= 28
                 && checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
@@ -169,7 +186,21 @@ public class MainActivity extends Activity {
     }
 
     @Override
+    public void onConfigurationChanged(Configuration c) {
+        super.onConfigurationChanged(c);
+        if (setting("themeMode", "system").equals("system")) {
+            applyTheme();
+            pushState();
+        }
+    }
+
+    @Override
     public void onBackPressed() {
+        if (introActive) {
+            ui.evaluateJavascript("window.Intro&&Intro.skip()", null);
+            endIntro();
+            return;
+        }
         if (customView != null) {
             hideCustom();
             return;
@@ -236,6 +267,7 @@ public class MainActivity extends Activity {
         s.setSupportZoom(false);
         s.setBuiltInZoomControls(false);
         w.setBackgroundColor(Color.TRANSPARENT);
+        noDark(w);
         w.setOverScrollMode(View.OVER_SCROLL_NEVER);
         w.setVerticalScrollBarEnabled(false);
         w.setHorizontalScrollBarEnabled(false);
@@ -248,7 +280,7 @@ public class MainActivity extends Activity {
                     pushState();
                 } else {
                     topReady = true;
-                    top.evaluateJavascript("Top.setTheme('" + setting("theme", "daylight") + "')", null);
+                    top.evaluateJavascript("Top.setTheme('" + effectiveTheme() + "')", null);
                     pushTop();
                 }
             }
@@ -258,7 +290,7 @@ public class MainActivity extends Activity {
 
     void setExpanded(boolean e) {
         FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) ui.getLayoutParams();
-        int h = e ? ViewGroup.LayoutParams.MATCH_PARENT : dp(76);
+        int h = (e || introActive) ? ViewGroup.LayoutParams.MATCH_PARENT : dp(76);
         if (lp.height != h) {
             lp.height = h;
             ui.setLayoutParams(lp);
@@ -268,9 +300,58 @@ public class MainActivity extends Activity {
     // ------------------------------------------------------------------ theme
 
     String[] themeRow() {
-        String n = setting("theme", "daylight");
+        String n = effectiveTheme();
         for (String[] t : THEMES) if (t[0].equals(n)) return t;
         return THEMES[0];
+    }
+
+    String effectiveTheme() {
+        String m = setting("themeMode", "system");
+        boolean dark;
+        if (m.equals("dark")) dark = true;
+        else if (m.equals("light")) dark = false;
+        else dark = (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
+        return dark ? setting("darkStyle", "midnight") : setting("lightStyle", "daylight");
+    }
+
+    void introStyle() {
+        if (!introActive) return;
+        int bg = Color.parseColor("#070B24");
+        getWindow().setBackgroundDrawable(new ColorDrawable(bg));
+        getWindow().setStatusBarColor(bg);
+        getWindow().setNavigationBarColor(bg);
+        getWindow().getDecorView().setSystemUiVisibility(0);
+        if (root != null) root.setBackgroundColor(bg);
+    }
+
+    void endIntro() {
+        if (!introActive) return;
+        introActive = false;
+        applyTheme();
+        setExpanded(!mode.equals("web") || menuOpen);
+    }
+
+    @SuppressWarnings("deprecation")
+    static void noDark(WebView w) {
+        try {
+            if (WebViewFeature.isFeatureSupported(WebViewFeature.ALGORITHMIC_DARKENING)) {
+                WebSettingsCompat.setAlgorithmicDarkeningAllowed(w.getSettings(), false);
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
+            if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {
+                WebSettingsCompat.setForceDark(w.getSettings(), WebSettingsCompat.FORCE_DARK_OFF);
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    void rebuildPageScript() {
+        StringBuilder sb = new StringBuilder();
+        if (flag("adblock", true) && !adJs.isEmpty()) sb.append(adJs).append("\n;\n");
+        if (flag("darkPages", false) && !darkJs.isEmpty()) sb.append(darkJs).append("\n;\n");
+        pageScript = sb.toString();
     }
 
     void applyTheme() {
@@ -305,10 +386,12 @@ public class MainActivity extends Activity {
             history = new JSONArray(sp.getString("history", "[]"));
             bookmarks = new JSONArray(sp.getString("bookmarks", "[]"));
             settings = new JSONObject(sp.getString("settings", "{}"));
+            dls = new JSONArray(sp.getString("downloads", "[]"));
         } catch (JSONException e) {
             history = new JSONArray();
             bookmarks = new JSONArray();
             settings = new JSONObject();
+            dls = new JSONArray();
         }
     }
 
@@ -345,6 +428,7 @@ public class MainActivity extends Activity {
                     .putString("history", history.toString())
                     .putString("bookmarks", bookmarks.toString())
                     .putString("settings", settings.toString())
+                    .putString("downloads", dls.toString())
                     .putString("tabs", all.toString())
                     .apply();
         } catch (JSONException ignored) {
@@ -503,6 +587,8 @@ public class MainActivity extends Activity {
         if (web && cur != null && cur.wv != null) cur.wv.requestFocus();
         pushState();
         pushTop();
+        if (m.equals("downloads")) startDlPoll();
+        else stopDlPoll();
         if (m.equals("search")) {
             main.postDelayed(new Runnable() {
                 @Override
@@ -518,7 +604,7 @@ public class MainActivity extends Activity {
         }
     }
 
-    static String js(JSONObject o) {
+    static String js(Object o) {
         return o.toString().replace("\u2028", "\\u2028").replace("\u2029", "\\u2029");
     }
 
@@ -528,13 +614,16 @@ public class MainActivity extends Activity {
             JSONObject o = new JSONObject();
             o.put("mode", mode);
             o.put("arg", modeArg);
-            o.put("theme", setting("theme", "daylight"));
+            o.put("theme", effectiveTheme());
             JSONObject st = new JSONObject();
             st.put("engine", setting("engine", "google"));
             st.put("adblock", setting("adblock", "true"));
             st.put("popups", setting("popups", "true"));
             st.put("darkPages", setting("darkPages", "false"));
             st.put("desktop", setting("desktop", "false"));
+            st.put("themeMode", setting("themeMode", "system"));
+            st.put("lightStyle", setting("lightStyle", "daylight"));
+            st.put("darkStyle", setting("darkStyle", "midnight"));
             o.put("settings", st);
             JSONArray ta = new JSONArray();
             for (Tab t : tabs) {
@@ -729,25 +818,15 @@ public class MainActivity extends Activity {
         s.setLoadWithOverviewMode(t.desktop);
     }
 
-    void applyAdScript(Tab t) {
+    void applyScripts(Tab t) {
         if (t.wv == null) return;
         try {
             if (t.script != null) {
                 t.script.remove();
                 t.script = null;
             }
-            if (flag("adblock", true) && !adJs.isEmpty() && WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
-                t.script = WebViewCompat.addDocumentStartJavaScript(t.wv, adJs, Collections.singleton("*"));
-            }
-        } catch (Throwable ignored) {
-        }
-    }
-
-    void applyDark(Tab t) {
-        if (t.wv == null) return;
-        try {
-            if (WebViewFeature.isFeatureSupported(WebViewFeature.ALGORITHMIC_DARKENING)) {
-                WebSettingsCompat.setAlgorithmicDarkeningAllowed(t.wv.getSettings(), flag("darkPages", false));
+            if (!pageScript.isEmpty() && WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
+                t.script = WebViewCompat.addDocumentStartJavaScript(t.wv, pageScript, Collections.singleton("*"));
             }
         } catch (Throwable ignored) {
         }
@@ -761,7 +840,7 @@ public class MainActivity extends Activity {
         s.setDatabaseEnabled(true);
         s.setSupportMultipleWindows(true);
         s.setJavaScriptCanOpenWindowsAutomatically(false);
-        s.setMediaPlaybackRequiresUserGesture(true);
+        s.setMediaPlaybackRequiresUserGesture(false);
         s.setSupportZoom(true);
         s.setBuiltInZoomControls(true);
         s.setDisplayZoomControls(false);
@@ -774,8 +853,8 @@ public class MainActivity extends Activity {
         w.setBackgroundColor(Color.WHITE);
         t.wv = w;
         applyDesktop(t);
-        applyDark(t);
-        applyAdScript(t);
+        noDark(w);
+        applyScripts(t);
 
         w.setWebViewClient(new TabClient(t));
         w.setWebChromeClient(new TabChrome(t));
@@ -845,22 +924,200 @@ public class MainActivity extends Activity {
         startActivity(Intent.createChooser(i, "Share"));
     }
 
+    // ------------------------------------------------------------------ downloads
+
+    DownloadManager dm() {
+        return (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+    }
+
     void download(String url, String ua, String cd, String mime) {
+        if (url == null || !(url.startsWith("http://") || url.startsWith("https://"))) {
+            toast("This file can't be downloaded");
+            return;
+        }
         try {
+            DownloadManager d = dm();
+            if (d == null) {
+                toast("Download failed");
+                return;
+            }
             DownloadManager.Request r = new DownloadManager.Request(Uri.parse(url));
-            if (mime != null) r.setMimeType(mime);
+            if (mime != null && !mime.isEmpty()) r.setMimeType(mime);
             String ck = CookieManager.getInstance().getCookie(url);
             if (ck != null) r.addRequestHeader("cookie", ck);
             if (ua != null) r.addRequestHeader("User-Agent", ua);
             String fn = URLUtil.guessFileName(url, cd, mime);
+            r.setTitle(fn);
             r.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
             r.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fn);
-            DownloadManager dm = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
-            if (dm != null) dm.enqueue(r);
-            toast("Downloading " + fn);
+            long id = d.enqueue(r);
+            JSONObject o = new JSONObject();
+            o.put("id", id);
+            o.put("name", fn);
+            o.put("url", url);
+            o.put("t", System.currentTimeMillis());
+            JSONArray n = new JSONArray();
+            n.put(o);
+            for (int i = 0; i < Math.min(dls.length(), 199); i++) n.put(dls.get(i));
+            dls = n;
+            saveSoon();
+            toast("Download started");
+            if (mode.equals("downloads")) pushDownloads();
         } catch (Exception e) {
             toast("Download failed");
         }
+    }
+
+    void pushDownloads() {
+        if (!uiReady) return;
+        DownloadManager d = dm();
+        if (d == null) return;
+        JSONArray out = new JSONArray();
+        JSONArray keep = new JSONArray();
+        boolean changed = false;
+        for (int i = 0; i < dls.length(); i++) {
+            JSONObject r = dls.optJSONObject(i);
+            if (r == null) continue;
+            Cursor c = null;
+            try {
+                c = d.query(new DownloadManager.Query().setFilterById(r.optLong("id")));
+                if (c != null && c.moveToFirst()) {
+                    int st = c.getInt(c.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS));
+                    long total = c.getLong(c.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES));
+                    long done = c.getLong(c.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR));
+                    String lu = c.getString(c.getColumnIndexOrThrow(DownloadManager.COLUMN_LOCAL_URI));
+                    String name = r.optString("name");
+                    if (st == DownloadManager.STATUS_SUCCESSFUL && lu != null) {
+                        String seg = Uri.parse(lu).getLastPathSegment();
+                        if (seg != null && !seg.isEmpty()) name = seg;
+                    }
+                    String status;
+                    if (st == DownloadManager.STATUS_SUCCESSFUL) status = "done";
+                    else if (st == DownloadManager.STATUS_FAILED) status = "failed";
+                    else if (st == DownloadManager.STATUS_PAUSED) status = "paused";
+                    else if (st == DownloadManager.STATUS_PENDING) status = "pending";
+                    else status = "running";
+                    JSONObject o = new JSONObject();
+                    o.put("id", String.valueOf(r.optLong("id")));
+                    o.put("name", name);
+                    o.put("url", r.optString("url"));
+                    o.put("t", r.optLong("t"));
+                    o.put("status", status);
+                    o.put("total", total);
+                    o.put("done", done);
+                    out.put(o);
+                    keep.put(r);
+                } else {
+                    changed = true;
+                }
+            } catch (Exception e) {
+                keep.put(r);
+            } finally {
+                if (c != null) c.close();
+            }
+        }
+        if (changed) {
+            dls = keep;
+            saveSoon();
+        }
+        ui.evaluateJavascript("App.setDownloads(" + js(out) + ")", null);
+    }
+
+    void startDlPoll() {
+        stopDlPoll();
+        dlPoll = new Runnable() {
+            @Override
+            public void run() {
+                if (!mode.equals("downloads")) return;
+                pushDownloads();
+                main.postDelayed(this, 1000);
+            }
+        };
+        main.post(dlPoll);
+    }
+
+    void stopDlPoll() {
+        if (dlPoll != null) main.removeCallbacks(dlPoll);
+        dlPoll = null;
+    }
+
+    void openDownload(long id, boolean share) {
+        DownloadManager d = dm();
+        Uri u = d == null ? null : d.getUriForDownloadedFile(id);
+        if (u == null) {
+            toast("File not found");
+            return;
+        }
+        String mime = d.getMimeTypeForDownloadedFile(id);
+        if (mime == null || mime.isEmpty()) mime = "*/*";
+        try {
+            if (share) {
+                Intent i = new Intent(Intent.ACTION_SEND);
+                i.setType(mime);
+                i.putExtra(Intent.EXTRA_STREAM, u);
+                i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                startActivity(Intent.createChooser(i, "Share"));
+            } else {
+                Intent i = new Intent(Intent.ACTION_VIEW);
+                i.setDataAndType(u, mime);
+                i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(i);
+            }
+        } catch (Exception e) {
+            toast("No app found to open this file");
+        }
+    }
+
+    void removeDownload(long id, boolean deleteFile) {
+        if (deleteFile) {
+            DownloadManager d = dm();
+            if (d != null) d.remove(id);
+        }
+        JSONArray n = new JSONArray();
+        for (int i = 0; i < dls.length(); i++) {
+            JSONObject o = dls.optJSONObject(i);
+            if (o != null && o.optLong("id") != id) n.put(o);
+        }
+        dls = n;
+        saveSoon();
+        pushDownloads();
+    }
+
+    void retryDownload(long id) {
+        String url = null;
+        for (int i = 0; i < dls.length(); i++) {
+            JSONObject o = dls.optJSONObject(i);
+            if (o != null && o.optLong("id") == id) url = o.optString("url");
+        }
+        if (url == null) return;
+        removeDownload(id, true);
+        download(url, baseUa, null, null);
+    }
+
+    void clearFinishedDownloads() {
+        DownloadManager d = dm();
+        JSONArray n = new JSONArray();
+        for (int i = 0; i < dls.length(); i++) {
+            JSONObject o = dls.optJSONObject(i);
+            if (o == null) continue;
+            boolean active = false;
+            Cursor c = null;
+            try {
+                c = d == null ? null : d.query(new DownloadManager.Query().setFilterById(o.optLong("id")));
+                if (c != null && c.moveToFirst()) {
+                    int st = c.getInt(c.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS));
+                    active = st == DownloadManager.STATUS_RUNNING || st == DownloadManager.STATUS_PENDING || st == DownloadManager.STATUS_PAUSED;
+                }
+            } catch (Exception ignored) {
+            } finally {
+                if (c != null) c.close();
+            }
+            if (active) n.put(o);
+        }
+        dls = n;
+        saveSoon();
+        pushDownloads();
+        toast("List cleared");
     }
 
     boolean handleScheme(WebView view, String url) {
@@ -918,8 +1175,8 @@ public class MainActivity extends Activity {
             t.url = url;
             t.loading = true;
             t.progress = 5;
-            if (flag("adblock", true) && !adJs.isEmpty() && !WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
-                view.evaluateJavascript(adJs, null);
+            if (!pageScript.isEmpty() && !WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
+                view.evaluateJavascript(pageScript, null);
             }
             if (t == cur) {
                 pushTop();
@@ -934,8 +1191,8 @@ public class MainActivity extends Activity {
             t.url = url;
             String title = view.getTitle();
             t.title = title == null || title.startsWith("http") ? host(url) : title;
-            if (flag("adblock", true) && !adJs.isEmpty() && !WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
-                view.evaluateJavascript(adJs, null);
+            if (!pageScript.isEmpty() && !WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
+                view.evaluateJavascript(pageScript, null);
             }
             addHistory(t, url, t.title);
             saveSoon();
@@ -1220,14 +1477,12 @@ public class MainActivity extends Activity {
                         settings.put(k, v);
                     } catch (JSONException ignored) {
                     }
-                    if (k.equals("theme")) {
+                    if (k.equals("themeMode") || k.equals("lightStyle") || k.equals("darkStyle")) {
                         applyTheme();
-                        ui.evaluateJavascript("App.setTheme('" + v + "')", null);
-                    } else if (k.equals("adblock")) {
-                        for (Tab t : tabs) applyAdScript(t);
+                    } else if (k.equals("adblock") || k.equals("darkPages")) {
+                        rebuildPageScript();
+                        for (Tab t : tabs) applyScripts(t);
                         if (cur != null && cur.wv != null) cur.wv.reload();
-                    } else if (k.equals("darkPages")) {
-                        for (Tab t : tabs) applyDark(t);
                     }
                     saveSoon();
                     pushState();
@@ -1278,6 +1533,66 @@ public class MainActivity extends Activity {
                 @Override
                 public void run() {
                     removeBookmark(url, false);
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void introDone() {
+            main.post(new Runnable() {
+                @Override
+                public void run() {
+                    endIntro();
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void dlOpen(final String id) {
+            main.post(new Runnable() {
+                @Override
+                public void run() {
+                    openDownload(Long.parseLong(id), false);
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void dlShare(final String id) {
+            main.post(new Runnable() {
+                @Override
+                public void run() {
+                    openDownload(Long.parseLong(id), true);
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void dlDelete(final String id) {
+            main.post(new Runnable() {
+                @Override
+                public void run() {
+                    removeDownload(Long.parseLong(id), true);
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void dlRetry(final String id) {
+            main.post(new Runnable() {
+                @Override
+                public void run() {
+                    retryDownload(Long.parseLong(id));
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void dlClear() {
+            main.post(new Runnable() {
+                @Override
+                public void run() {
+                    clearFinishedDownloads();
                 }
             });
         }
@@ -1339,11 +1654,7 @@ public class MainActivity extends Activity {
                 goHome();
                 break;
             case "downloads":
-                try {
-                    startActivity(new Intent(DownloadManager.ACTION_VIEW_DOWNLOADS));
-                } catch (Exception e) {
-                    toast("Downloads app not found");
-                }
+                show("downloads", "");
                 break;
             case "exit":
                 saveNow();
