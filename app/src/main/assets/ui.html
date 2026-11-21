@@ -186,22 +186,52 @@ button{font-family:inherit;color:inherit;cursor:pointer}
 .dl .st{color:var(--accent);font-weight:700}.dl .st.bad{color:#E5484D}
 
 /* ---------- Intro ---------- */
-#intro{position:fixed;inset:0;z-index:1000;background:radial-gradient(120% 80% at 50% 30%,#1b2c82 0%,#0b1038 45%,#050819 100%);overflow:hidden;perspective:900px;transition:opacity .45s ease,transform .45s ease;display:flex;align-items:center;justify-content:center}
-#intro.out{opacity:0;transform:scale(1.06);pointer-events:none}
+#intro{position:fixed;inset:0;z-index:1000;background:radial-gradient(120% 80% at 50% 28%,#1c2d86 0%,#0a0f36 52%,#04061a 100%);overflow:hidden;perspective:900px;transition:opacity .5s ease,transform .5s ease;display:flex;align-items:center;justify-content:center}
+#intro.out{opacity:0;transform:scale(1.08);pointer-events:none}
+#intro .aur{position:absolute;border-radius:50%;pointer-events:none;opacity:0;animation:iaur 4s ease-out forwards}
+#intro .a1{width:520px;height:520px;left:-220px;top:-140px;background:radial-gradient(closest-side,rgba(255,120,60,.32),transparent 70%)}
+#intro .a2{width:560px;height:560px;right:-240px;bottom:-150px;background:radial-gradient(closest-side,rgba(130,70,255,.45),transparent 70%);animation-delay:.3s}
+@keyframes iaur{0%{opacity:0;transform:scale(.6)}40%{opacity:1}100%{opacity:.9;transform:scale(1.15) translate(20px,-10px)}}
 #intro .glow{position:absolute;width:560px;height:560px;left:50%;top:40%;margin:-280px 0 0 -280px;border-radius:50%;background:radial-gradient(closest-side,rgba(60,140,255,.55),rgba(120,70,255,.25) 55%,transparent 72%);opacity:0;animation:iglow 3s ease-out .1s forwards}
 @keyframes iglow{0%{opacity:0;transform:scale(.4)}40%{opacity:1;transform:scale(1)}100%{opacity:.8;transform:scale(1.15)}}
 #intro .pt{position:absolute;bottom:-10px;border-radius:50%;background:rgba(160,200,255,.75);opacity:0;animation:ipt linear infinite}
 @keyframes ipt{0%{transform:translateY(0);opacity:0}15%{opacity:.8}100%{transform:translateY(-110vh);opacity:0}}
 #intro .stage{position:relative;transform-style:preserve-3d;display:flex;flex-direction:column;align-items:center;margin-top:-30px}
-#intro .lg{width:158px;height:158px;border-radius:50%;opacity:0;transform-style:preserve-3d;box-shadow:0 0 70px rgba(60,130,255,.75);animation:ilogo 1.5s cubic-bezier(.2,.8,.2,1) .15s forwards,ifloat 3s ease-in-out 1.7s infinite}
+#intro .orb{position:relative;width:168px;height:168px;transform-style:preserve-3d;display:grid;place-items:center}
+#intro .orb::before{content:"";position:absolute;inset:-70px;border-radius:50%;background:radial-gradient(closest-side,rgba(70,140,255,.55),transparent 72%);transform:translateZ(-2px)}
+#intro .lg{width:158px;height:158px;border-radius:50%;opacity:0;animation:ilogo 1.5s cubic-bezier(.2,.8,.2,1) .15s forwards,ifloat 3s ease-in-out 1.7s infinite}
 #intro .lg img{width:100%;height:100%;display:block;border-radius:50%}
 @keyframes ilogo{0%{opacity:0;transform:translateZ(-700px) rotateY(-540deg) scale(.2)}55%{opacity:1}100%{opacity:1;transform:translateZ(0) rotateY(0) scale(1)}}
 @keyframes ifloat{0%,100%{transform:translateY(0) rotateY(0)}50%{transform:translateY(-8px) rotateY(10deg)}}
-#intro .name{display:flex;gap:6px;margin-top:38px;transform-style:preserve-3d}
-#intro .name span{display:inline-block;font-size:50px;font-weight:900;font-style:italic;color:#fff;opacity:0;background:linear-gradient(180deg,#fff 25%,#9fd0ff 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 6px 14px rgba(40,110,255,.65));animation:iletter .8s cubic-bezier(.2,.9,.3,1.15) forwards;animation-delay:calc(1.15s + var(--i)*.11s)}
-@keyframes iletter{0%{opacity:0;transform:translate3d(0,60px,-500px) rotateX(-110deg) rotateY(50deg)}100%{opacity:1;transform:none}}
-#intro .sub{margin-top:12px;font-size:13px;font-weight:700;letter-spacing:9px;text-indent:9px;text-transform:uppercase;color:#a9c4ff;opacity:0;animation:ifade .8s ease 2.2s forwards}
+#intro .ring{position:absolute;inset:-26px;border-radius:50%;border:2px solid rgba(120,180,255,.3);border-top-color:rgba(255,255,255,.95);border-bottom-color:rgba(255,160,70,.85);opacity:0;pointer-events:none}
+#intro .r1{animation:iringin .8s ease .9s forwards,iorb1 3.2s linear .9s infinite}
+#intro .r2{inset:-42px;border-color:rgba(150,110,255,.3);border-left-color:rgba(120,220,255,.95);animation:iringin .8s ease 1.05s forwards,iorb2 4.2s linear 1.05s infinite}
+@keyframes iringin{to{opacity:1}}
+@keyframes iorb1{from{transform:rotateX(74deg) rotateZ(0)}to{transform:rotateX(74deg) rotateZ(360deg)}}
+@keyframes iorb2{from{transform:rotateY(74deg) rotateZ(360deg)}to{transform:rotateY(74deg) rotateZ(0)}}
+#intro .name{display:flex;gap:2px;margin-top:46px;transform-style:preserve-3d}
+#intro .name span{display:inline-block;padding:0 .09em;font-size:54px;font-weight:800;line-height:1.2;color:#fff;opacity:0;background:linear-gradient(105deg,transparent 38%,rgba(255,255,255,.95) 50%,transparent 62%) -150% 0/260% 100% no-repeat,linear-gradient(180deg,#fff 22%,#8fc4ff 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 6px 14px rgba(40,110,255,.6));animation:iletter .85s cubic-bezier(.2,.9,.3,1.15) forwards,ishine 1.1s ease-in-out forwards;animation-delay:calc(1s + var(--i)*.11s),calc(2.3s + var(--i)*.07s)}
+@keyframes iletter{0%{opacity:0;transform:translate3d(0,70px,-600px) rotateX(-100deg) rotateY(60deg)}100%{opacity:1;transform:none}}
+@keyframes ishine{from{background-position:260% 0,0 0}to{background-position:-150% 0,0 0}}
+#intro .sub{display:flex;align-items:center;gap:14px;margin-top:8px;opacity:0;animation:ifade .8s ease 2.1s forwards}
+#intro .sub span{font-size:13px;font-weight:700;letter-spacing:9px;text-indent:9px;text-transform:uppercase;color:#b4cbff}
+#intro .sub i{display:block;height:1px;width:0;background:linear-gradient(90deg,transparent,#7fb0ff);animation:iline .9s ease 2.1s forwards}
+#intro .sub i:last-child{background:linear-gradient(270deg,transparent,#7fb0ff)}
+@keyframes iline{to{width:42px}}
+#intro .tag{margin-top:34px;font-size:12px;letter-spacing:3px;color:rgba(180,200,255,.7);opacity:0;animation:ifade 1s ease 2.6s forwards;text-transform:uppercase}
 @keyframes ifade{to{opacity:1}}
+
+/* ---------- About ---------- */
+.abh{display:flex;flex-direction:column;align-items:center;text-align:center;padding:18px 20px 6px}
+.abh .mark{width:96px;height:96px}
+.abh h2{font-size:24px;font-weight:800;letter-spacing:-.4px;margin-top:14px}
+.abh .v{color:var(--sub);font-size:14px;margin-top:3px}
+.abh p{color:var(--sub);font-size:14px;line-height:1.5;margin-top:12px;max-width:300px}
+.kv{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 16px;border-bottom:1px solid var(--line);font-size:15.5px}
+.kv:last-child{border-bottom:0}
+.kv span:last-child{color:var(--sub);text-align:right;font-size:14.5px}
+.kv.txt{display:block;color:var(--sub);font-size:14px;line-height:1.5}
+.chev{margin-left:auto;color:var(--sub)!important;width:20px!important;height:20px!important}
 
 /* ---------- Confirm dialog ---------- */
 #dlg{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:80;padding:28px}
@@ -242,9 +272,11 @@ button{font-family:inherit;color:inherit;cursor:pointer}
 <symbol id="sun" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></g></symbol>
 <symbol id="auto" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3.5a8.5 8.5 0 0 0 0 17z" fill="currentColor"/></symbol>
 <symbol id="clear" viewBox="0 0 24 24"><path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/></symbol>
+<symbol id="info" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></symbol>
+<symbol id="chev" viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></symbol>
 </defs></svg>
 
-<div id="intro"><div class="pts"></div><div class="glow"></div><div class="stage"><div class="lg"><img src="logo.png" alt=""></div><div class="name"></div><div class="sub">Browser</div></div></div>
+<div id="intro"><div class="aur a1"></div><div class="aur a2"></div><div class="pts"></div><div class="glow"></div><div class="stage"><div class="orb"><div class="ring r1"></div><div class="ring r2"></div><div class="lg"><img src="logo.png" alt=""></div></div><div class="name"></div><div class="sub"><i></i><span>Browser</span><i></i></div><div class="tag">Fast &middot; Private &middot; Ad-free</div></div></div>
 
 <!-- HOME -->
 <section class="page on" id="p-home">
@@ -318,6 +350,12 @@ button{font-family:inherit;color:inherit;cursor:pointer}
   <div class="scroll" id="slistx"></div>
 </section>
 
+<!-- ABOUT -->
+<section class="page" id="p-about">
+  <div class="hdr"><button class="ib" id="ab-back" aria-label="Back"><svg class="ic"><use href="#back"/></svg></button><h1>About Pravah</h1></div>
+  <div class="scroll" id="alist"></div>
+</section>
+
 <nav id="bar"></nav>
 
 <div id="scrim"><div id="sheet"></div></div>
@@ -326,7 +364,7 @@ button{font-family:inherit;color:inherit;cursor:pointer}
 <script>
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const N=window.Native||new Proxy({},{get:()=>()=>{}});
-const S={mode:null,theme:'daylight',settings:{engine:'google',adblock:'true',popups:'true',darkPages:'false',desktop:'false',themeMode:'system',lightStyle:'daylight',darkStyle:'midnight'},downloads:[],tabs:[],history:[],bookmarks:[],canBack:false,canForward:false,bookmarked:false,desktop:false,blank:true,arg:''};
+const S={mode:null,theme:'daylight',settings:{engine:'google',adblock:'true',popups:'true',darkPages:'false',desktop:'false',themeMode:'system',lightStyle:'daylight',darkStyle:'midnight'},downloads:[],about:{version:'1.1',engine:'',android:''},tabs:[],history:[],bookmarks:[],canBack:false,canForward:false,bookmarked:false,desktop:false,blank:true,arg:''};
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const host=u=>{try{return new URL(u).hostname.replace(/^www\./,'')}catch(e){return u||''}};
 const ico=(n,c='')=>`<svg class="ic ${c}"><use href="#${n}"/></svg>`;
@@ -553,8 +591,9 @@ function renderSettings(){
   <div class="sec">Browsing</div>
   <div class="card2">${tg('desktop','Desktop site for new tabs')}
   <button class="set" id="s-dl">${ico('download')}<span class="lbl">Downloads</span></button>
+  <button class="set" id="s-about">${ico('info')}<span class="lbl">About Pravah</span>${ico('chev','chev')}</button>
   <button class="set danger" id="s-exit">${ico('power')}<span class="lbl">Exit Pravah</span></button></div>
-  <div class="about"><b>Pravah Browser</b><br>Version 1.0<br>Created by Anil Yadav</div>`;
+`;
   $('#slist').scrollTop=keep;
 }
 $('#slist').onclick=e=>{
@@ -565,8 +604,23 @@ $('#slist').onclick=e=>{
   if(e.target.closest('#s-hist'))ask('Clear history?','All browsing history will be deleted.','Clear',()=>N.clearHistory());
   if(e.target.closest('#s-data'))ask('Clear cookies & cache?','You will be signed out of websites.','Clear',()=>N.clearData());
   if(e.target.closest('#s-dl'))N.nav('downloads','');
+  if(e.target.closest('#s-about'))N.nav('about','');
   if(e.target.closest('#s-exit'))N.action('exit');
 };
+
+/* ---------- about ---------- */
+function renderAbout(){
+  const a=S.about||{},kv=(k,v)=>`<div class="kv"><span>${k}</span><span>${esc(v)}</span></div>`;
+  $('#alist').innerHTML=`
+  <div class="abh"><div class="mark"><img src="logo.png" alt=""></div><h2>Pravah Browser</h2><div class="v">Version ${esc(a.version||'1.1')}</div><p>A fast, private browser with built-in ad blocking.</p></div>
+  <div class="sec">Browser</div>
+  <div class="card2">${kv('Version',a.version||'1.1')}${kv('Engine','Chromium '+(a.engine||''))}${kv('Android',a.android||'')}${kv('Package','com.pravah.browser')}</div>
+  <div class="sec">Protection</div>
+  <div class="card2">${kv('Ad &amp; tracker blocking',getB('adblock')?'On':'Off')}${kv('Pop-up blocking',getB('popups')?'On':'Off')}<div class="kv txt">Your history, bookmarks and downloads are stored only on this device.</div></div>
+  <div class="sec">Developer</div>
+  <div class="card2">${kv('Created by','Anil Yadav')}</div>`;
+}
+$('#ab-back').onclick=()=>N.nav('settings','');
 
 /* ---------- confirm dialog ---------- */
 let dcb=null;
@@ -667,7 +721,7 @@ $('#dl-clear').onclick=()=>ask('Clear list?','Finished downloads are removed fro
   function end(){if(fin)return;fin=true;el.classList.add('out');setTimeout(()=>{el.remove();N.introDone()},450)}
   window.Intro={skip:end};
   el.onclick=end;
-  setTimeout(end,3500);
+  setTimeout(end,4300);
 })();
 
 /* ---------- native -> UI ---------- */
@@ -679,7 +733,7 @@ function onEnter(m){
   if(m==='bookmarks'){$('#bq').value=''}
   if(m!=='home')$('#hq').blur();
 }
-const PAGES={home:'p-home',tabs:'p-tabs',history:'p-history',bookmarks:'p-bookmarks',settings:'p-settings',search:'p-search',downloads:'p-downloads'};
+const PAGES={home:'p-home',tabs:'p-tabs',history:'p-history',bookmarks:'p-bookmarks',settings:'p-settings',search:'p-search',downloads:'p-downloads',about:'p-about'};
 window.App={
   setState(o){
     const pm=S.mode;
@@ -696,6 +750,7 @@ window.App={
     else if(S.mode==='history')renderHistory();
     else if(S.mode==='bookmarks')renderBookmarks();
     else if(S.mode==='downloads')renderDownloads();
+    else if(S.mode==='about')renderAbout();
     else if(S.mode==='settings')renderSettings();
     else if(S.mode==='search')renderSuggest();
     updateHome();

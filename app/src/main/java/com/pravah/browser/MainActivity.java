@@ -209,6 +209,10 @@ public class MainActivity extends Activity {
             ui.evaluateJavascript("document.getElementById('scrim').click()", null);
             return;
         }
+        if (mode.equals("about")) {
+            show("settings", "");
+            return;
+        }
         if (!mode.equals("web") && !mode.equals("home")) {
             activate(cur);
             return;
@@ -506,6 +510,10 @@ public class MainActivity extends Activity {
     }
 
     void activate(Tab t) {
+        if (t == null) {
+            t = blankTab(false);
+            tabs.add(t);
+        }
         if (cur != null && cur != t && mode.equals("web")) captureThumb(cur);
         cur = t;
         content.removeAllViews();
@@ -538,9 +546,7 @@ public class MainActivity extends Activity {
         destroyWebView(t);
         tabs.remove(t);
         if (tabs.isEmpty()) {
-            Tab n = blankTab(false);
-            tabs.add(n);
-            cur = n;
+            cur = null; // no tabs left: the tab screen shows its empty state
         } else if (t == cur) {
             cur = tabs.get(Math.min(i, tabs.size() - 1));
         }
@@ -625,6 +631,16 @@ public class MainActivity extends Activity {
             st.put("lightStyle", setting("lightStyle", "daylight"));
             st.put("darkStyle", setting("darkStyle", "midnight"));
             o.put("settings", st);
+            JSONObject ab = new JSONObject();
+            String ver = "1.1";
+            try {
+                ver = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+            } catch (Exception ignored) {
+            }
+            ab.put("version", ver);
+            ab.put("engine", chromeVer);
+            ab.put("android", Build.VERSION.RELEASE);
+            o.put("about", ab);
             JSONArray ta = new JSONArray();
             for (Tab t : tabs) {
                 JSONObject j = new JSONObject();
