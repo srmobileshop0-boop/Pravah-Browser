@@ -32,6 +32,16 @@ final class AdBlocker {
             "google-analytics.com", "hotjar.com", "mouseflow.com", "crazyegg.com", "branch.io", "app-measurement.com"
     ));
 
+    /** Ad click-through links (what you get when an ad is tapped): never opened. */
+    static boolean isAdClick(String url, String host) {
+        if (url == null || host == null) return false;
+        String h = host.toLowerCase(Locale.ROOT), u = url.toLowerCase(Locale.ROOT);
+        if (h.endsWith("googleadservices.com") || h.endsWith("doubleclick.net") || h.endsWith("googlesyndication.com")) return true;
+        boolean google = h.startsWith("www.google.") || h.equals("google.com") || h.endsWith(".google.com");
+        if (google && (u.contains("/aclk?") || u.contains("/pagead/aclk"))) return true;
+        return h.endsWith("bing.com") && (u.contains("/aclk?") || u.contains("/aclick?"));
+    }
+
     static boolean isBlocked(String url, String host) {
         if (host == null || host.isEmpty()) return false;
         host = host.toLowerCase(Locale.ROOT);

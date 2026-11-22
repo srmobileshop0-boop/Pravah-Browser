@@ -4,6 +4,7 @@ import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.DownloadManager;
+import android.app.KeyguardManager;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -12,6 +13,7 @@ import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
@@ -21,6 +23,8 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
+import android.provider.Settings;
 import android.os.Message;
 import android.util.Base64;
 import android.view.Gravity;
@@ -59,6 +63,9 @@ import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
@@ -78,7 +85,7 @@ import java.util.regex.Pattern;
  */
 public class MainActivity extends Activity {
 
-    static final int FILE_REQ = 77, PERM_REQ = 78;
+    static final int FILE_REQ = 77, PERM_REQ = 78, LOCK_REQ = 79, WALL_REQ = 80, ROLE_REQ = 81;
     static final String[][] THEMES = {
             {"daylight", "#F6F1E9", "0"}, {"sky", "#EAF4FF", "0"},
             {"midnight", "#0F1226", "1"}, {"amoled", "#000000", "1"}};
@@ -117,6 +124,14 @@ public class MainActivity extends Activity {
     WebChromeClient.CustomViewCallback customCb;
     ValueCallback<Uri[]> fileCb;
     boolean saveQueued = false;
+    View spacerView;
+    int settingsDepth = 0;
+    boolean toolbarsHidden = false, unlocked = false, authBusy = false;
+    long toolbarToggleAt = 0, bgAt = 0;
+    static final String[][] SETTING_DEFAULTS = {
+            {"addrBar", "top"}, {"scrollMode", "always"}, {"uiFont", "default"}, {"wall", "none"},
+            {"textZoom", "100"}, {"autoplay", "true"}, {"block3p", "false"}, {"askDl", "false"},
+            {"lock", "false"}, {"forceZoom", "false"}, {"fsRotate", "auto"}};
 
     int dp(int v) {
         return Math.round(v * getResources().getDisplayMetrics().density);
@@ -129,6 +144,9 @@ public class MainActivity extends Activity {
         super.onCreate(b);
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         sp = getSharedPreferences("pravah", MODE_PRIVATE);
+        // The start-up intro plays only the first time the app is ever opened.
+        introActive = !sp.getBoolean("introSeen", false);
+        if (introActive) sp.edit().putBoolean("introSeen", true).apply();
         loadData();
         adJs = readAsset("adblock.js");
         darkJs = readAsset("darkpage.js");
@@ -180,6 +198,59 @@ public class MainActivity extends Activity {
     }
 
     @Override
+    protected void onStop() {
+        super.onStop();
+        bgAt = SystemClock.elapsedRealtime();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        pushState();
+        if (!flag("lock", false)) {
+            unlocked = true;
+            return;
+        }
+        if (!unlocked || SystemClock.elapsedRealtime() - bgAt > 30000) {
+            unlocked = false;
+            requireUnlock();
+        }
+    }
+
+    void requireUnlock() {
+        if (authBusy || root == null) return;
+        KeyguardManager km = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);
+        if (km == null || !km.isDeviceSecure()) {
+            unlocked = true;
+            return;
+        }
+        Intent i = km.createConfirmDeviceCredentialIntent("Pravah Browser", "Unlock to continue");
+        if (i == null) {
+            unlocked = true;
+            return;
+        }
+        authBusy = true;
+        root.setVisibility(View.INVISIBLE);
+        try {
+            startActivityForResult(i, LOCK_REQ);
+        } catch (Exception e) {
+            authBusy = false;
+            unlocked = true;
+            root.setVisibility(View.VISIBLE);
+        }
+    }
+
+    boolean isDefaultBrowser() {
+        try {
+            Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse("http://www.example.com"));
+            android.content.pm.ResolveInfo ri = getPackageManager().resolveActivity(i, android.content.pm.PackageManager.MATCH_DEFAULT_ONLY);
+            return ri != null && ri.activityInfo != null && getPackageName().equals(ri.activityInfo.packageName);
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    @Override
     protected void onDestroy() {
         for (Tab t : tabs) if (t.wv != null) t.wv.destroy();
         super.onDestroy();
@@ -209,6 +280,10 @@ public class MainActivity extends Activity {
             ui.evaluateJavascript("document.getElementById('scrim').click()", null);
             return;
         }
+        if (mode.equals("settings") && settingsDepth > 0) {
+            ui.evaluateJavascript("App.settingsBack()", null);
+            return;
+        }
         if (mode.equals("about")) {
             show("settings", "");
             return;
@@ -233,6 +308,18 @@ public class MainActivity extends Activity {
         if (req == FILE_REQ && fileCb != null) {
             fileCb.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(res, data));
             fileCb = null;
+        } else if (req == LOCK_REQ) {
+            authBusy = false;
+            if (res == RESULT_OK) {
+                unlocked = true;
+                root.setVisibility(View.VISIBLE);
+            } else {
+                finish();
+            }
+        } else if (req == WALL_REQ) {
+            if (res == RESULT_OK && data != null && data.getData() != null) saveWallpaper(data.getData());
+        } else if (req == ROLE_REQ) {
+            pushState();
         } else super.onActivityResult(req, res, data);
     }
 
@@ -246,13 +333,12 @@ public class MainActivity extends Activity {
         top = makeUiWebView();
         top.loadUrl("file:///android_asset/top.html");
         top.setVisibility(View.GONE);
-        column.addView(top, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(60)));
-
         content = new FrameLayout(this);
         column.addView(content, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
 
-        View spacer = new View(this);
-        column.addView(spacer, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(76)));
+        spacerView = new View(this);
+        column.addView(spacerView, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(76)));
+        applyBarPos();
 
         root.addView(column, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
@@ -260,6 +346,23 @@ public class MainActivity extends Activity {
         ui.loadUrl("file:///android_asset/ui.html");
         root.addView(ui, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.BOTTOM));
         setContentView(root);
+    }
+
+    /** Address bar on top (default) or just above the bottom bar. */
+    void applyBarPos() {
+        if (top == null || column == null) return;
+        boolean bottom = setting("addrBar", "top").equals("bottom");
+        column.removeView(top);
+        column.addView(top, bottom ? 1 : 0, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(60)));
+    }
+
+    void setToolbars(boolean hidden) {
+        if (hidden == toolbarsHidden) return;
+        toolbarsHidden = hidden;
+        toolbarToggleAt = SystemClock.elapsedRealtime();
+        top.setVisibility(hidden || !mode.equals("web") ? View.GONE : View.VISIBLE);
+        spacerView.setVisibility(hidden ? View.GONE : View.VISIBLE);
+        ui.setTranslationY(hidden ? dp(76) : 0);
     }
 
     WebView makeUiWebView() {
@@ -282,6 +385,7 @@ public class MainActivity extends Activity {
                 if (v == ui) {
                     uiReady = true;
                     pushState();
+                    pushWallpaper();
                 } else {
                     topReady = true;
                     top.evaluateJavascript("Top.setTheme('" + effectiveTheme() + "')", null);
@@ -351,10 +455,16 @@ public class MainActivity extends Activity {
         }
     }
 
+    static final String ZOOM_JS = "(function(){function f(){try{var m=document.querySelector('meta[name=viewport]');if(!m)return;"
+            + "var c=(m.getAttribute('content')||'').replace(/(user-scalable|maximum-scale|minimum-scale)\\s*=\\s*[^,;]*[,;]?\\s*/gi,'');"
+            + "m.setAttribute('content',c+(c?', ':'')+'user-scalable=yes, maximum-scale=10');}catch(e){}}"
+            + "document.addEventListener('DOMContentLoaded',f);window.addEventListener('load',f);})();";
+
     void rebuildPageScript() {
         StringBuilder sb = new StringBuilder();
         if (flag("adblock", true) && !adJs.isEmpty()) sb.append(adJs).append("\n;\n");
         if (flag("darkPages", false) && !darkJs.isEmpty()) sb.append(darkJs).append("\n;\n");
+        if (flag("forceZoom", false)) sb.append(ZOOM_JS).append("\n;\n");
         pageScript = sb.toString();
     }
 
@@ -588,6 +698,9 @@ public class MainActivity extends Activity {
         mode = m;
         modeArg = arg == null ? "" : arg;
         boolean web = m.equals("web");
+        toolbarsHidden = false;
+        spacerView.setVisibility(View.VISIBLE);
+        ui.setTranslationY(0);
         top.setVisibility(web ? View.VISIBLE : View.GONE);
         setExpanded(!web || menuOpen);
         if (web && cur != null && cur.wv != null) cur.wv.requestFocus();
@@ -630,9 +743,10 @@ public class MainActivity extends Activity {
             st.put("themeMode", setting("themeMode", "system"));
             st.put("lightStyle", setting("lightStyle", "daylight"));
             st.put("darkStyle", setting("darkStyle", "midnight"));
+            for (String[] d : SETTING_DEFAULTS) st.put(d[0], setting(d[0], d[1]));
             o.put("settings", st);
             JSONObject ab = new JSONObject();
-            String ver = "1.1";
+            String ver = "1.2";
             try {
                 ver = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
             } catch (Exception ignored) {
@@ -640,6 +754,7 @@ public class MainActivity extends Activity {
             ab.put("version", ver);
             ab.put("engine", chromeVer);
             ab.put("android", Build.VERSION.RELEASE);
+            ab.put("isDefault", isDefaultBrowser());
             o.put("about", ab);
             JSONArray ta = new JSONArray();
             for (Tab t : tabs) {
@@ -826,6 +941,20 @@ public class MainActivity extends Activity {
         return baseUa;
     }
 
+    void applyWebPrefs(Tab t) {
+        if (t.wv == null) return;
+        WebSettings s = t.wv.getSettings();
+        int z = 100;
+        try {
+            z = Integer.parseInt(setting("textZoom", "100"));
+        } catch (Exception ignored) {
+        }
+        s.setTextZoom(Math.max(50, Math.min(250, z)));
+        s.setMediaPlaybackRequiresUserGesture(!flag("autoplay", true));
+        CookieManager.getInstance().setAcceptCookie(true);
+        CookieManager.getInstance().setAcceptThirdPartyCookies(t.wv, !flag("block3p", false));
+    }
+
     void applyDesktop(Tab t) {
         if (t.wv == null) return;
         WebSettings s = t.wv.getSettings();
@@ -856,7 +985,6 @@ public class MainActivity extends Activity {
         s.setDatabaseEnabled(true);
         s.setSupportMultipleWindows(true);
         s.setJavaScriptCanOpenWindowsAutomatically(false);
-        s.setMediaPlaybackRequiresUserGesture(false);
         s.setSupportZoom(true);
         s.setBuiltInZoomControls(true);
         s.setDisplayZoomControls(false);
@@ -865,9 +993,20 @@ public class MainActivity extends Activity {
         s.setAllowContentAccess(false);
         s.setCacheMode(WebSettings.LOAD_DEFAULT);
         CookieManager.getInstance().setAcceptCookie(true);
-        CookieManager.getInstance().setAcceptThirdPartyCookies(w, true);
         w.setBackgroundColor(Color.WHITE);
         t.wv = w;
+        applyWebPrefs(t);
+        w.setOnScrollChangeListener(new View.OnScrollChangeListener() {
+            @Override
+            public void onScrollChange(View v, int x, int y, int ox, int oy) {
+                if (!mode.equals("web") || cur == null || cur.wv != v || menuOpen) return;
+                if (!setting("scrollMode", "always").equals("hide")) return;
+                if (SystemClock.elapsedRealtime() - toolbarToggleAt < 500) return;
+                int dy = y - oy;
+                if (y <= dp(4) || dy < -dp(10)) setToolbars(false);
+                else if (dy > dp(12)) setToolbars(true);
+            }
+        });
         applyDesktop(t);
         noDark(w);
         applyScripts(t);
@@ -946,7 +1085,22 @@ public class MainActivity extends Activity {
         return (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
     }
 
-    void download(String url, String ua, String cd, String mime) {
+    void download(final String url, final String ua, final String cd, final String mime) {
+        if (flag("askDl", false) && url != null && (url.startsWith("http://") || url.startsWith("https://"))) {
+            String fn = URLUtil.guessFileName(url, cd, mime);
+            new AlertDialog.Builder(this).setTitle("Download file?").setMessage(fn)
+                    .setPositiveButton("Download", new android.content.DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(android.content.DialogInterface d, int w) {
+                            startDownload(url, ua, cd, mime);
+                        }
+                    }).setNegativeButton("Cancel", null).show();
+            return;
+        }
+        startDownload(url, ua, cd, mime);
+    }
+
+    void startDownload(String url, String ua, String cd, String mime) {
         if (url == null || !(url.startsWith("http://") || url.startsWith("https://"))) {
             toast("This file can't be downloaded");
             return;
@@ -1170,6 +1324,12 @@ public class MainActivity extends Activity {
 
         @Override
         public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest req) {
+            if (req.isForMainFrame() && flag("adblock", true)) {
+                Uri mu = req.getUrl();
+                if (AdBlocker.isAdClick(mu.toString(), mu.getHost())) {
+                    return new WebResourceResponse("text/html", "utf-8", new ByteArrayInputStream("<html><body></body></html>".getBytes()));
+                }
+            }
             if (!req.isForMainFrame() && flag("adblock", true)) {
                 Uri u = req.getUrl();
                 if (AdBlocker.isBlocked(u.toString(), u.getHost())) {
@@ -1182,6 +1342,7 @@ public class MainActivity extends Activity {
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest req) {
             String url = req.getUrl().toString();
+            if (flag("adblock", true) && AdBlocker.isAdClick(url, req.getUrl().getHost())) return true; // ad click: do nothing
             if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("about:") || url.startsWith("data:")) return false;
             return handleScheme(view, url);
         }
@@ -1286,7 +1447,9 @@ public class MainActivity extends Activity {
             root.addView(v, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
             getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
                     | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
-            setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR);
+            setRequestedOrientation(setting("fsRotate", "auto").equals("landscape")
+                    ? android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                    : android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR);
         }
 
         @Override
@@ -1440,6 +1603,7 @@ public class MainActivity extends Activity {
                 @Override
                 public void run() {
                     menuOpen = true;
+                    setToolbars(false);
                     setExpanded(true);
                     pushState();
                     ui.post(new Runnable() {
@@ -1495,7 +1659,28 @@ public class MainActivity extends Activity {
                     }
                     if (k.equals("themeMode") || k.equals("lightStyle") || k.equals("darkStyle")) {
                         applyTheme();
-                    } else if (k.equals("adblock") || k.equals("darkPages")) {
+                    } else if (k.equals("addrBar")) {
+                        applyBarPos();
+                    } else if (k.equals("scrollMode")) {
+                        if (!v.equals("hide")) setToolbars(false);
+                    } else if (k.equals("textZoom") || k.equals("autoplay") || k.equals("block3p")) {
+                        for (Tab t : tabs) applyWebPrefs(t);
+                    } else if (k.equals("lock")) {
+                        if (v.equals("true")) {
+                            KeyguardManager km = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);
+                            if (km == null || !km.isDeviceSecure()) {
+                                try {
+                                    settings.put("lock", "false");
+                                } catch (JSONException ignored) {
+                                }
+                                toast("Set a screen lock (PIN, pattern or password) on your phone first");
+                            } else {
+                                unlocked = true;
+                            }
+                        }
+                    } else if (k.equals("wall")) {
+                        if (v.equals("custom")) pushWallpaper();
+                    } else if (k.equals("adblock") || k.equals("darkPages") || k.equals("forceZoom")) {
                         rebuildPageScript();
                         for (Tab t : tabs) applyScripts(t);
                         if (cur != null && cur.wv != null) cur.wv.reload();
@@ -1512,6 +1697,46 @@ public class MainActivity extends Activity {
                 @Override
                 public void run() {
                     deleteHistory(t, url);
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void settingsDepth(final int d) {
+            main.post(new Runnable() {
+                @Override
+                public void run() {
+                    settingsDepth = d;
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void pickWallpaper() {
+            main.post(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        Intent i = new Intent(Intent.ACTION_GET_CONTENT);
+                        i.setType("image/*");
+                        i.addCategory(Intent.CATEGORY_OPENABLE);
+                        startActivityForResult(Intent.createChooser(i, "Choose wallpaper"), WALL_REQ);
+                    } catch (Exception e) {
+                        toast("No gallery app found");
+                    }
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void clearBookmarks() {
+            main.post(new Runnable() {
+                @Override
+                public void run() {
+                    bookmarks = new JSONArray();
+                    saveSoon();
+                    pushState();
+                    toast("Bookmarks cleared");
                 }
             });
         }
@@ -1551,6 +1776,11 @@ public class MainActivity extends Activity {
                     removeBookmark(url, false);
                 }
             });
+        }
+
+        @JavascriptInterface
+        public boolean skipIntro() {
+            return !introActive;
         }
 
         @JavascriptInterface
@@ -1643,6 +1873,74 @@ public class MainActivity extends Activity {
         }
     }
 
+    File wallFile() {
+        return new File(getFilesDir(), "wallpaper.jpg");
+    }
+
+    void saveWallpaper(final Uri uri) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    BitmapFactory.Options o = new BitmapFactory.Options();
+                    o.inJustDecodeBounds = true;
+                    InputStream in = getContentResolver().openInputStream(uri);
+                    BitmapFactory.decodeStream(in, null, o);
+                    if (in != null) in.close();
+                    int sample = 1;
+                    while (o.outHeight / (sample * 2) >= 1280 && o.outWidth / (sample * 2) >= 720) sample *= 2;
+                    BitmapFactory.Options o2 = new BitmapFactory.Options();
+                    o2.inSampleSize = sample;
+                    in = getContentResolver().openInputStream(uri);
+                    Bitmap b = BitmapFactory.decodeStream(in, null, o2);
+                    if (in != null) in.close();
+                    if (b == null) throw new Exception("decode");
+                    FileOutputStream fo = new FileOutputStream(wallFile());
+                    b.compress(Bitmap.CompressFormat.JPEG, 82, fo);
+                    fo.close();
+                    b.recycle();
+                    main.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                settings.put("wall", "custom");
+                            } catch (JSONException ignored) {
+                            }
+                            saveSoon();
+                            pushWallpaper();
+                            pushState();
+                            toast("Wallpaper set");
+                        }
+                    });
+                } catch (Throwable e) {
+                    main.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            toast("Couldn't use that picture");
+                        }
+                    });
+                }
+            }
+        }).start();
+    }
+
+    void pushWallpaper() {
+        if (!uiReady) return;
+        File f = wallFile();
+        if (!f.exists()) return;
+        try {
+            FileInputStream fi = new FileInputStream(f);
+            ByteArrayOutputStream bo = new ByteArrayOutputStream();
+            byte[] buf = new byte[16384];
+            int n;
+            while ((n = fi.read(buf)) > 0) bo.write(buf, 0, n);
+            fi.close();
+            String d = "data:image/jpeg;base64," + Base64.encodeToString(bo.toByteArray(), Base64.NO_WRAP);
+            ui.evaluateJavascript("App.setWallpaper(" + JSONObject.quote(d) + ")", null);
+        } catch (Throwable ignored) {
+        }
+    }
+
     void doAction(String name) {
         switch (name) {
             case "reload":
@@ -1671,6 +1969,51 @@ public class MainActivity extends Activity {
                 break;
             case "downloads":
                 show("downloads", "");
+                break;
+            case "default":
+                if (isDefaultBrowser()) {
+                    toast("Pravah is already your default browser");
+                    break;
+                }
+                try {
+                    if (Build.VERSION.SDK_INT >= 29) {
+                        android.app.role.RoleManager rm = (android.app.role.RoleManager) getSystemService(Context.ROLE_SERVICE);
+                        if (rm != null && rm.isRoleAvailable(android.app.role.RoleManager.ROLE_BROWSER)
+                                && !rm.isRoleHeld(android.app.role.RoleManager.ROLE_BROWSER)) {
+                            startActivityForResult(rm.createRequestRoleIntent(android.app.role.RoleManager.ROLE_BROWSER), ROLE_REQ);
+                            break;
+                        }
+                    }
+                    startActivity(new Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS));
+                } catch (Exception e) {
+                    try {
+                        startActivity(new Intent(Settings.ACTION_SETTINGS));
+                    } catch (Exception e2) {
+                        toast("Open Android Settings > Apps > Default apps");
+                    }
+                }
+                break;
+            case "notifications":
+                try {
+                    Intent ni = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+                    ni.putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName());
+                    startActivity(ni);
+                } catch (Exception e) {
+                    toast("Can't open notification settings");
+                }
+                break;
+            case "sharepravah":
+                share("Try Pravah Browser - a fast, private browser with built-in ad blocking.");
+                break;
+            case "feedback":
+                try {
+                    Intent fi = new Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:"));
+                    fi.putExtra(Intent.EXTRA_SUBJECT, "Pravah Browser feedback");
+                    fi.putExtra(Intent.EXTRA_TEXT, "\n\n---\nPravah " + Build.VERSION.RELEASE + " / " + Build.MODEL);
+                    startActivity(Intent.createChooser(fi, "Send feedback"));
+                } catch (Exception e) {
+                    toast("No email app found");
+                }
                 break;
             case "exit":
                 saveNow();

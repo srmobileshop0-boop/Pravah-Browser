@@ -13,7 +13,7 @@
     /* Google Search */
     '#tads', '#tadsb', '#bottomads', 'div[data-text-ad]', '[data-text-ad]', '.commercial-unit-desktop-top',
     '.commercial-unit-mobile-top', '.cu-container', '.pla-unit', '.pla-unit-container', '.uEierd',
-    '[aria-label="Ads"]', '.ads-ad', '[data-ad-slot]',
+    '[aria-label="Ads"]', '.ads-ad', '[data-ad-slot]', '#tvcap', '.qGXjvb', '[data-text-ad="1"]', 'div[data-ta-slot-pos]', '[data-sokoban-container][data-text-ad]',
     /* Bing */
     '.b_ad', 'li.b_ad', '.sb_adTA', '#b_results > li.b_adLastChild',
     /* Yahoo search */
@@ -99,34 +99,81 @@
     }, 250);
   }
 
-  /* ---------- 3. Google results: remove blocks labelled "Sponsored"/"Ad" ---------- */
-  if (isGoogle || /bing\.com$|yahoo\.com$/.test(H)) {
-    var LABELS = { 'Sponsored': 1, 'Ad': 1, 'Ads': 1, 'Sponsored results': 1, 'Sponsored ·': 1 };
-    var STOP = { rso: 1, tads: 1, tadsb: 1, bottomads: 1, center_col: 1, main: 1, search: 1, b_results: 1 };
+  /* ---------- 3. Search-result ads (Google, Bing, Yahoo, DuckDuckGo) ----------
+     Google keeps renaming its ad containers, so ads are found by what they ARE:
+     ad-click links (aclk / googleadservices / doubleclick) and "Sponsored" / "Ad" labels.
+     The whole ad block around them is hidden; organic results are never touched. */
+  var isSearchSite = isGoogle || /(^|\.)bing\.com$|(^|\.)yahoo\.com$|(^|\.)duckduckgo\.com$/.test(H);
+  if (isSearchSite) {
+    var AD_A = 'a[data-rw*="aclk"],a[href*="/aclk?"],a[href*="/aclick?"],a[href*="/pagead/aclk"],' +
+               'a[href*="googleadservices.com/"],a[href*="doubleclick.net/"],a[href*="/pagead/"],a[href*="syndicatedsearch.goog"]';
+    var LABEL = /^(sponsored|ads?|sponsored results?|sponsored links?|sponsored products?|(sponsored|ads?)\s*[·•\-].*|प्रायोजित|विज्ञापन)$/i;
+    var STOPID = { rso: 1, tads: 1, tadsb: 1, bottomads: 1, center_col: 1, main: 1, search: 1, res: 1, cols: 1, b_results: 1, b_content: 1, content: 1, web: 1 };
+    var isAdA = function (a) { try { return a.matches(AD_A); } catch (e) { return false; } };
+    /* is there an ordinary result title (a heading inside a normal link) in p, outside of `skip`? */
+    var organicIn = function (p, skip) {
+      var hs = p.querySelectorAll('h3,h2,[role="heading"]');
+      for (var i = 0; i < hs.length; i++) {
+        var h = hs[i];
+        if (skip.contains(h)) continue;
+        var a = h.closest ? h.closest('a') : null;
+        if (a && !isAdA(a)) return true;
+      }
+      return false;
+    };
+    var unitFor = function (n) {
+      var c = n, prev = n;
+      for (var k = 0; k < 14; k++) {
+        var p = c.parentElement;
+        if (!p || p === document.body || p === document.documentElement || STOPID[p.id] || p.getAttribute('role') === 'main') break;
+        if (organicIn(p, c)) break;
+        var all = p.getElementsByTagName('a').length;
+        if (all > 16 && p.querySelectorAll(AD_A).length * 2 < all) break;   /* too many normal links: that is the result list */
+        prev = c; c = p;
+        try { if (c.getBoundingClientRect().height > window.innerHeight * 2.2) { c = prev; break; } } catch (e) {}
+      }
+      return c;
+    };
+    var hide = function (el) {
+      try { el.setAttribute('data-pv-ad', '1'); el.style.setProperty('display', 'none', 'important'); } catch (e) {}
+    };
+    var onResults = function () {
+      return /^\/(search|html|aclk)/.test(location.pathname || '') || /[?&](q|p|query)=/.test(location.search || '');
+    };
     var sweep = function () {
       try {
-        var nodes = document.querySelectorAll('span,div');
-        for (var i = 0; i < nodes.length; i++) {
-          var n = nodes[i];
-          if (n.children.length) continue;
-          var t = (n.textContent || '').trim();
-          if (!LABELS[t]) continue;
-          var c = n;
-          for (var k = 0; k < 8 && c.parentElement; k++) {
-            var par = c.parentElement;
-            if (STOP[par.id] || par.getAttribute('role') === 'main') { c.style.display = 'none'; break; }
-            c = par;
-          }
+        var as = document.querySelectorAll(AD_A);
+        for (var i = 0; i < as.length; i++) {
+          if (as[i].closest('[data-pv-ad]')) continue;
+          hide(unitFor(as[i]));
         }
+        if (!onResults() || !document.body) return;
+        var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false), t, hits = [];
+        while ((t = w.nextNode())) {
+          var v = t.nodeValue;
+          if (!v || v.length > 40) continue;
+          v = v.trim();
+          if (!v || !LABEL.test(v)) continue;
+          var el = t.parentElement;
+          if (!el || el.closest('[data-pv-ad],nav,header,footer,script,style,title,option,textarea,input,button')) continue;
+          hits.push(el);
+        }
+        for (var j = 0; j < hits.length; j++) hide(unitFor(hits[j]));
       } catch (e) {}
     };
     var timer;
-    var kick = function () { clearTimeout(timer); timer = setTimeout(sweep, 350); };
-    try {
-      new MutationObserver(kick).observe(document.documentElement, { childList: true, subtree: true });
-    } catch (e) {}
+    var kick = function () { clearTimeout(timer); timer = setTimeout(sweep, 120); };
+    try { new MutationObserver(kick).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) {}
     document.addEventListener('DOMContentLoaded', sweep);
-    setInterval(sweep, 2000);
+    window.addEventListener('load', sweep);
+    setInterval(sweep, 1500);
+    /* an ad link can never be opened by accident */
+    document.addEventListener('click', function (e) {
+      try {
+        var a = e.target && e.target.closest ? e.target.closest(AD_A) : null;
+        if (a) { e.preventDefault(); e.stopPropagation(); }
+      } catch (err) {}
+    }, true);
   }
 
   /* ---------- 4. Block script-created popups / window.open spam ---------- */
