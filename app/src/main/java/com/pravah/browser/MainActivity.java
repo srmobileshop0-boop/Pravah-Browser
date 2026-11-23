@@ -17,6 +17,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -35,8 +36,10 @@ import android.view.inputmethod.InputMethodManager;
 import android.webkit.ConsoleMessage;
 import android.webkit.CookieManager;
 import android.webkit.DownloadListener;
+import android.webkit.GeolocationPermissions;
 import android.webkit.JavascriptInterface;
 import android.webkit.JsResult;
+import android.webkit.PermissionRequest;
 import android.webkit.URLUtil;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
@@ -67,6 +70,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -85,14 +89,17 @@ import java.util.regex.Pattern;
  */
 public class MainActivity extends Activity {
 
-    static final int FILE_REQ = 77, PERM_REQ = 78, LOCK_REQ = 79, WALL_REQ = 80, ROLE_REQ = 81;
+    static final int FILE_REQ = 77, PERM_REQ = 78, LOCK_REQ = 79, WALL_REQ = 80, ROLE_REQ = 81, AUTH_REQ = 82, EXP_REQ = 83, IMP_REQ = 84, PERM_WEB = 85, PERM_GEO = 86;
     static final String[][] THEMES = {
             {"daylight", "#F6F1E9", "0"}, {"sky", "#EAF4FF", "0"},
             {"midnight", "#0F1226", "1"}, {"amoled", "#000000", "1"}};
     static final String[] ENGINE_URLS = {
             "google", "https://www.google.com/search?q=",
             "bing", "https://www.bing.com/search?q=",
-            "yahoo", "https://search.yahoo.com/search?p="};
+            "yahoo", "https://search.yahoo.com/search?p=",
+            "duckduckgo", "https://duckduckgo.com/?q=",
+            "brave", "https://search.brave.com/search?q=",
+            "ecosia", "https://www.ecosia.org/search?q="};
 
     static class Tab {
         int id;
@@ -131,7 +138,20 @@ public class MainActivity extends Activity {
     static final String[][] SETTING_DEFAULTS = {
             {"addrBar", "top"}, {"scrollMode", "always"}, {"uiFont", "default"}, {"wall", "none"},
             {"textZoom", "100"}, {"autoplay", "true"}, {"block3p", "false"}, {"askDl", "false"},
-            {"lock", "false"}, {"forceZoom", "false"}, {"fsRotate", "auto"}};
+            {"lock", "false"}, {"forceZoom", "false"}, {"fsRotate", "auto"},
+            {"bgPlay", "true"}, {"vidToolbar", "true"}, {"vidMenu", "true"}, {"ytRecs", "false"}, {"ytShorts", "false"},
+            {"httpsOnly", "false"}, {"fpProtect", "false"}, {"jsOn", "true"}, {"cookiesOn", "true"}, {"stopRedirect", "true"},
+            {"permLoc", "ask"}, {"permCam", "ask"}, {"permMic", "ask"}, {"safeBrowse", "true"}, {"dnt", "true"},
+            {"deamp", "true"}, {"gpc", "true"}, {"webrtc", "default"}, {"lockPriv", "false"}, {"lockHist", "false"},
+            {"suggest", "true"}, {"touchSearch", "false"}, {"customEngines", "[]"}, {"delExitHist", "false"},
+            {"delExitCookies", "false"}, {"delExitCache", "false"}, {"dlDest", "public"}, {"profName", ""}, {"profEmail", ""}};
+    String privJs = "";
+    JSONArray playlist = new JSONArray();
+    Runnable pendingAuth;
+    long lastAuthAt = 0;
+    PermissionRequest pendingPerm;
+    GeolocationPermissions.Callback pendingGeoCb;
+    String pendingGeoOrigin;
 
     int dp(int v) {
         return Math.round(v * getResources().getDisplayMetrics().density);
@@ -150,6 +170,7 @@ public class MainActivity extends Activity {
         loadData();
         adJs = readAsset("adblock.js");
         darkJs = readAsset("darkpage.js");
+        privJs = readAsset("privacy.js");
         rebuildPageScript();
         String d = WebSettings.getDefaultUserAgent(this);
         baseUa = d.replace("; wv", "").replace(" Version/4.0", "");
@@ -171,6 +192,12 @@ public class MainActivity extends Activity {
             }
         }, 6000);
 
+        if (Build.VERSION.SDK_INT >= 33 && !sp.getBoolean("notifAsked", false)) {
+            sp.edit().putBoolean("notifAsked", true).apply();
+            if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, PERM_REQ);
+            }
+        }
         if (Build.VERSION.SDK_INT <= 28
                 && checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
             requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, PERM_REQ);
@@ -195,6 +222,29 @@ public class MainActivity extends Activity {
         super.onPause();
         saveNow();
         CookieManager.getInstance().flush();
+        if (flag("bgPlay", true)) {
+            if (!isFinishing()) startKeepAlive();
+        } else if (cur != null && cur.wv != null) {
+            cur.wv.onPause();
+        }
+    }
+
+    void startKeepAlive() {
+        try {
+            AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+            if (am == null || !am.isMusicActive()) return;
+            Intent i = new Intent(this, KeepAliveService.class);
+            if (Build.VERSION.SDK_INT >= 26) startForegroundService(i);
+            else startService(i);
+        } catch (Throwable ignored) {
+        }
+    }
+
+    void stopKeepAlive() {
+        try {
+            stopService(new Intent(this, KeepAliveService.class));
+        } catch (Throwable ignored) {
+        }
     }
 
     @Override
@@ -206,12 +256,14 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        stopKeepAlive();
+        if (cur != null && cur.wv != null) cur.wv.onResume();
         pushState();
         if (!flag("lock", false)) {
             unlocked = true;
             return;
         }
-        if (!unlocked || SystemClock.elapsedRealtime() - bgAt > 30000) {
+        if (!unlocked || (SystemClock.elapsedRealtime() - bgAt > 30000 && SystemClock.elapsedRealtime() - lastAuthAt > 30000)) {
             unlocked = false;
             requireUnlock();
         }
@@ -252,6 +304,8 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        if (isFinishing()) wipeOnExit();
+        stopKeepAlive();
         for (Tab t : tabs) if (t.wv != null) t.wv.destroy();
         super.onDestroy();
     }
@@ -304,6 +358,49 @@ public class MainActivity extends Activity {
     }
 
     @Override
+    public void onRequestPermissionsResult(int req, String[] perms, int[] res) {
+        boolean ok = res.length > 0;
+        for (int r : res) if (r != android.content.pm.PackageManager.PERMISSION_GRANTED) ok = false;
+        if (req == PERM_WEB && pendingPerm != null) {
+            try {
+                if (ok) pendingPerm.grant(pendingPerm.getResources());
+                else pendingPerm.deny();
+            } catch (Exception ignored) {
+            }
+            pendingPerm = null;
+        } else if (req == PERM_GEO && pendingGeoCb != null) {
+            pendingGeoCb.invoke(pendingGeoOrigin, ok, false);
+            pendingGeoCb = null;
+        } else {
+            super.onRequestPermissionsResult(req, perms, res);
+        }
+    }
+
+    void authThen(Runnable r) {
+        if (SystemClock.elapsedRealtime() - lastAuthAt < 60000) {
+            r.run();
+            return;
+        }
+        KeyguardManager km = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);
+        if (km == null || !km.isDeviceSecure()) {
+            r.run();
+            return;
+        }
+        Intent i = km.createConfirmDeviceCredentialIntent("Pravah Browser", "Confirm to continue");
+        if (i == null) {
+            r.run();
+            return;
+        }
+        pendingAuth = r;
+        try {
+            startActivityForResult(i, AUTH_REQ);
+        } catch (Exception e) {
+            pendingAuth = null;
+            r.run();
+        }
+    }
+
+    @Override
     protected void onActivityResult(int req, int res, Intent data) {
         if (req == FILE_REQ && fileCb != null) {
             fileCb.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(res, data));
@@ -312,6 +409,7 @@ public class MainActivity extends Activity {
             authBusy = false;
             if (res == RESULT_OK) {
                 unlocked = true;
+                lastAuthAt = SystemClock.elapsedRealtime();
                 root.setVisibility(View.VISIBLE);
             } else {
                 finish();
@@ -320,6 +418,17 @@ public class MainActivity extends Activity {
             if (res == RESULT_OK && data != null && data.getData() != null) saveWallpaper(data.getData());
         } else if (req == ROLE_REQ) {
             pushState();
+        } else if (req == AUTH_REQ) {
+            Runnable r = pendingAuth;
+            pendingAuth = null;
+            if (res == RESULT_OK) {
+                lastAuthAt = SystemClock.elapsedRealtime();
+                if (r != null) r.run();
+            }
+        } else if (req == EXP_REQ) {
+            if (res == RESULT_OK && data != null && data.getData() != null) writeBookmarks(data.getData());
+        } else if (req == IMP_REQ) {
+            if (res == RESULT_OK && data != null && data.getData() != null) readBookmarks(data.getData());
         } else super.onActivityResult(req, res, data);
     }
 
@@ -465,6 +574,20 @@ public class MainActivity extends Activity {
         if (flag("adblock", true) && !adJs.isEmpty()) sb.append(adJs).append("\n;\n");
         if (flag("darkPages", false) && !darkJs.isEmpty()) sb.append(darkJs).append("\n;\n");
         if (flag("forceZoom", false)) sb.append(ZOOM_JS).append("\n;\n");
+        if (!privJs.isEmpty()) {
+            sb.append("window.__pvCfg={fp:").append(flag("fpProtect", false))
+                    .append(",dnt:").append(flag("dnt", true))
+                    .append(",gpc:").append(flag("gpc", true))
+                    .append(",deamp:").append(flag("deamp", true))
+                    .append(",rtc:").append(setting("webrtc", "default").equals("off"))
+                    .append(",bg:").append(flag("bgPlay", true))
+                    .append(",vtool:").append(flag("vidToolbar", true))
+                    .append(",vmenu:").append(flag("vidMenu", true))
+                    .append(",ytr:").append(flag("ytRecs", false))
+                    .append(",yts:").append(flag("ytShorts", false))
+                    .append(",touch:").append(flag("touchSearch", false))
+                    .append("};\n").append(privJs).append("\n;\n");
+        }
         pageScript = sb.toString();
     }
 
@@ -501,7 +624,9 @@ public class MainActivity extends Activity {
             bookmarks = new JSONArray(sp.getString("bookmarks", "[]"));
             settings = new JSONObject(sp.getString("settings", "{}"));
             dls = new JSONArray(sp.getString("downloads", "[]"));
+            playlist = new JSONArray(sp.getString("playlist", "[]"));
         } catch (JSONException e) {
+            playlist = new JSONArray();
             history = new JSONArray();
             bookmarks = new JSONArray();
             settings = new JSONObject();
@@ -543,6 +668,7 @@ public class MainActivity extends Activity {
                     .putString("bookmarks", bookmarks.toString())
                     .putString("settings", settings.toString())
                     .putString("downloads", dls.toString())
+                    .putString("playlist", playlist.toString())
                     .putString("tabs", all.toString())
                     .apply();
         } catch (JSONException ignored) {
@@ -746,7 +872,7 @@ public class MainActivity extends Activity {
             for (String[] d : SETTING_DEFAULTS) st.put(d[0], setting(d[0], d[1]));
             o.put("settings", st);
             JSONObject ab = new JSONObject();
-            String ver = "1.2";
+            String ver = "1.3";
             try {
                 ver = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
             } catch (Exception ignored) {
@@ -770,7 +896,8 @@ public class MainActivity extends Activity {
             }
             o.put("tabs", ta);
             o.put("bookmarks", bookmarks);
-            if (mode.equals("history") || mode.equals("search")) {
+            o.put("playlist", playlist);
+            if (mode.equals("history") || mode.equals("search") || mode.equals("settings")) {
                 JSONArray h = new JSONArray();
                 for (int i = 0; i < Math.min(history.length(), 600); i++) h.put(history.get(i));
                 o.put("history", h);
@@ -818,11 +945,19 @@ public class MainActivity extends Activity {
         if (looksLikeUrl(in)) return "https://" + in;
         String base = ENGINE_URLS[1];
         for (int i = 0; i < ENGINE_URLS.length; i += 2) if (ENGINE_URLS[i].equals(engine)) base = ENGINE_URLS[i + 1];
-        try {
-            return base + URLEncoder.encode(in, "UTF-8");
-        } catch (Exception e) {
-            return base + in;
+        if (engine != null && engine.matches("^c\\d+$")) {
+            try {
+                JSONArray ce = new JSONArray(setting("customEngines", "[]"));
+                base = ce.getJSONObject(Integer.parseInt(engine.substring(1))).getString("u");
+            } catch (Exception ignored) {
+            }
         }
+        String enc = in;
+        try {
+            enc = URLEncoder.encode(in, "UTF-8");
+        } catch (Exception ignored) {
+        }
+        return base.contains("%s") ? base.replace("%s", enc) : base + enc;
     }
 
     void loadInCur(String url) {
@@ -835,6 +970,8 @@ public class MainActivity extends Activity {
             content.removeAllViews();
             content.addView(t.wv, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         }
+        url = upgrade(url);
+        t.url = url;
         t.wv.loadUrl(url);
         show("web", "");
     }
@@ -951,8 +1088,15 @@ public class MainActivity extends Activity {
         }
         s.setTextZoom(Math.max(50, Math.min(250, z)));
         s.setMediaPlaybackRequiresUserGesture(!flag("autoplay", true));
-        CookieManager.getInstance().setAcceptCookie(true);
+        s.setJavaScriptEnabled(flag("jsOn", true));
+        CookieManager.getInstance().setAcceptCookie(flag("cookiesOn", true));
         CookieManager.getInstance().setAcceptThirdPartyCookies(t.wv, !flag("block3p", false));
+        try {
+            if (WebViewFeature.isFeatureSupported(WebViewFeature.SAFE_BROWSING_ENABLE)) {
+                WebSettingsCompat.setSafeBrowsingEnabled(s, flag("safeBrowse", true));
+            }
+        } catch (Throwable ignored) {
+        }
     }
 
     void applyDesktop(Tab t) {
@@ -1111,6 +1255,14 @@ public class MainActivity extends Activity {
                 toast("Download failed");
                 return;
             }
+            if (setting("dlDest", "public").equals("external")) {
+                try {
+                    startActivity(Intent.createChooser(new Intent(Intent.ACTION_VIEW, Uri.parse(url)), "Download with"));
+                } catch (Exception e) {
+                    toast("No downloader app found");
+                }
+                return;
+            }
             DownloadManager.Request r = new DownloadManager.Request(Uri.parse(url));
             if (mime != null && !mime.isEmpty()) r.setMimeType(mime);
             String ck = CookieManager.getInstance().getCookie(url);
@@ -1119,7 +1271,7 @@ public class MainActivity extends Activity {
             String fn = URLUtil.guessFileName(url, cd, mime);
             r.setTitle(fn);
             r.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-            r.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fn);
+            r.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, setting("dlDest", "public").equals("pravah") ? "Pravah/" + fn : fn);
             long id = d.enqueue(r);
             JSONObject o = new JSONObject();
             o.put("id", id);
@@ -1292,18 +1444,208 @@ public class MainActivity extends Activity {
 
     boolean handleScheme(WebView view, String url) {
         try {
+            if (url.startsWith("tel:") || url.startsWith("mailto:") || url.startsWith("sms:") || url.startsWith("geo:")) {
+                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+                return true;
+            }
+            boolean allow = !flag("stopRedirect", true);
             if (url.startsWith("intent:")) {
                 Intent i = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
                 String fb = i.getStringExtra("browser_fallback_url");
+                if (allow) {
+                    i.setComponent(null);
+                    i.setSelector(null);
+                    i.addCategory(Intent.CATEGORY_BROWSABLE);
+                    try {
+                        startActivity(i);
+                        return true;
+                    } catch (Exception ignored) {
+                    }
+                }
                 if (fb != null && fb.startsWith("http")) view.loadUrl(fb);
-                return true; // never launch other apps from intent: links
+                else if (!allow) toast("Blocked an app redirect");
+                return true;
             }
-            if (url.startsWith("tel:") || url.startsWith("mailto:") || url.startsWith("sms:") || url.startsWith("geo:")) {
+            if (allow) {
                 startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+            } else {
+                toast("Blocked an app redirect");
             }
         } catch (Exception ignored) {
         }
         return true;
+    }
+
+    String upgrade(String url) {
+        if (url == null || !url.startsWith("http://") || !flag("httpsOnly", false)) return url;
+        String h = host(url);
+        if (h.equals("localhost") || h.endsWith(".local") || h.matches("^[\\d.:]+$")) return url;
+        return "https://" + url.substring(7);
+    }
+
+    void handleAct(Uri u) {
+        String a = u.getHost() == null ? "" : u.getHost();
+        if (a.equals("download")) {
+            String v = u.getQueryParameter("u");
+            if (v != null) download(v, userAgent(false), null, null);
+        } else if (a.equals("playlist")) {
+            String v = u.getQueryParameter("v");
+            addPlaylist(u.getQueryParameter("u"), u.getQueryParameter("t"));
+            if ("1".equals(u.getQueryParameter("dl")) && v != null && !v.isEmpty()) download(v, userAgent(false), null, null);
+        } else if (a.equals("search")) {
+            String q = u.getQueryParameter("q");
+            if (q != null && !q.isEmpty()) {
+                String url = resolve(q, setting("engine", "google"));
+                if (url != null) activate(newTab(url, cur != null && cur.priv));
+            }
+        }
+    }
+
+    void addPlaylist(String url, String title) {
+        if (url == null || !url.startsWith("http")) return;
+        try {
+            JSONArray n = new JSONArray();
+            JSONObject o = new JSONObject();
+            o.put("url", url);
+            o.put("title", title == null || title.isEmpty() ? host(url) : title);
+            o.put("t", System.currentTimeMillis());
+            n.put(o);
+            for (int i = 0; i < playlist.length(); i++) {
+                JSONObject x = playlist.getJSONObject(i);
+                if (!url.equals(x.optString("url"))) n.put(x);
+            }
+            playlist = n;
+            toast("Added to Playlist");
+            saveSoon();
+            pushState();
+        } catch (JSONException ignored) {
+        }
+    }
+
+    void wipe(boolean h, boolean ck, boolean cache, boolean bm, boolean dl, long since) {
+        try {
+            if (h) {
+                if (since <= 0) {
+                    history = new JSONArray();
+                } else {
+                    JSONArray n = new JSONArray();
+                    for (int i = 0; i < history.length(); i++) {
+                        JSONObject o = history.optJSONObject(i);
+                        if (o != null && o.optLong("t") < since) n.put(o);
+                    }
+                    history = n;
+                }
+            }
+            if (ck) {
+                CookieManager.getInstance().removeAllCookies(null);
+                CookieManager.getInstance().flush();
+                WebStorage.getInstance().deleteAllData();
+            }
+            if (cache) for (Tab t : tabs) if (t.wv != null) t.wv.clearCache(true);
+            if (bm) bookmarks = new JSONArray();
+            if (dl) dls = new JSONArray();
+        } catch (Throwable ignored) {
+        }
+        saveSoon();
+        pushState();
+    }
+
+    void wipeOnExit() {
+        boolean h = flag("delExitHist", false), c = flag("delExitCookies", false), ca = flag("delExitCache", false);
+        if (h || c || ca) {
+            wipe(h, c, ca, false, false, 0);
+            saveNow();
+        }
+    }
+
+    void clearSite(String h) {
+        try {
+            JSONArray n = new JSONArray();
+            for (int i = 0; i < history.length(); i++) {
+                JSONObject o = history.getJSONObject(i);
+                if (!host(o.optString("url")).replaceFirst("^www\\.", "").equals(h)) n.put(o);
+            }
+            history = n;
+            CookieManager cm = CookieManager.getInstance();
+            String[] bases = {"https://" + h, "https://www." + h, "http://" + h};
+            for (String b : bases) {
+                String ck = cm.getCookie(b);
+                if (ck == null) continue;
+                for (String part : ck.split(";")) {
+                    int eq = part.indexOf('=');
+                    String name = (eq > 0 ? part.substring(0, eq) : part).trim();
+                    if (name.isEmpty()) continue;
+                    cm.setCookie(b, name + "=; Max-Age=0; Path=/");
+                    cm.setCookie(b, name + "=; Max-Age=0; Path=/; Domain=" + h);
+                }
+            }
+            cm.flush();
+        } catch (Throwable ignored) {
+        }
+        saveSoon();
+        pushState();
+    }
+
+    void writeBookmarks(Uri uri) {
+        try {
+            StringBuilder sb = new StringBuilder("<!DOCTYPE NETSCAPE-Bookmark-file-1>\n<META HTTP-EQUIV=\"Content-Type\" CONTENT=\"text/html; charset=UTF-8\">\n<TITLE>Bookmarks</TITLE>\n<H1>Bookmarks</H1>\n<DL><p>\n");
+            for (int i = 0; i < bookmarks.length(); i++) {
+                JSONObject o = bookmarks.optJSONObject(i);
+                if (o == null) continue;
+                sb.append("<DT><A HREF=\"").append(esc(o.optString("url"))).append("\" ADD_DATE=\"").append(o.optLong("t") / 1000).append("\">")
+                        .append(esc(o.optString("title"))).append("</A>\n");
+            }
+            sb.append("</DL><p>\n");
+            OutputStream os = getContentResolver().openOutputStream(uri);
+            if (os == null) throw new Exception("open");
+            os.write(sb.toString().getBytes("UTF-8"));
+            os.close();
+            toast("Bookmarks exported");
+        } catch (Throwable e) {
+            toast("Couldn't export bookmarks");
+        }
+    }
+
+    static String esc(String s) {
+        return s == null ? "" : s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;");
+    }
+
+    static String unesc(String s) {
+        return s.replace("&quot;", "\"").replace("&lt;", "<").replace("&gt;", ">").replace("&#39;", "'").replace("&amp;", "&");
+    }
+
+    void readBookmarks(Uri uri) {
+        try {
+            InputStream in = getContentResolver().openInputStream(uri);
+            if (in == null) throw new Exception("open");
+            ByteArrayOutputStream bo = new ByteArrayOutputStream();
+            byte[] buf = new byte[16384];
+            int n;
+            while ((n = in.read(buf)) > 0) bo.write(buf, 0, n);
+            in.close();
+            String txt = bo.toString("UTF-8");
+            Matcher m = Pattern.compile("<A[^>]*?HREF=\"([^\"]+)\"[^>]*>(.*?)</A>", Pattern.CASE_INSENSITIVE | Pattern.DOTALL).matcher(txt);
+            int added = 0;
+            while (m.find()) {
+                String u = unesc(m.group(1)).trim();
+                if (!u.startsWith("http") || isBookmarked(u)) continue;
+                JSONObject o = new JSONObject();
+                o.put("url", u);
+                String t = unesc(m.group(2).replaceAll("<[^>]*>", "")).trim();
+                o.put("title", t.isEmpty() ? u : t);
+                o.put("t", System.currentTimeMillis());
+                JSONArray w = new JSONArray();
+                w.put(o);
+                for (int i = 0; i < bookmarks.length(); i++) w.put(bookmarks.get(i));
+                bookmarks = w;
+                added++;
+            }
+            saveSoon();
+            pushState();
+            toast(added + " bookmarks imported");
+        } catch (Throwable e) {
+            toast("Couldn't import bookmarks");
+        }
     }
 
     static String errorPage(String url, String desc) {
@@ -1342,7 +1684,18 @@ public class MainActivity extends Activity {
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest req) {
             String url = req.getUrl().toString();
+            if (url.startsWith("pravah-act:")) {
+                handleAct(req.getUrl());
+                return true;
+            }
             if (flag("adblock", true) && AdBlocker.isAdClick(url, req.getUrl().getHost())) return true; // ad click: do nothing
+            if (url.startsWith("http://") && flag("httpsOnly", false)) {
+                String up = upgrade(url);
+                if (!up.equals(url)) {
+                    view.loadUrl(up);
+                    return true;
+                }
+            }
             if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("about:") || url.startsWith("data:")) return false;
             return handleScheme(view, url);
         }
@@ -1431,6 +1784,93 @@ public class MainActivity extends Activity {
         }
 
         @Override
+        public void onPermissionRequest(final PermissionRequest r) {
+            main.post(new Runnable() {
+                @Override
+                public void run() {
+                    boolean cam = false, mic = false;
+                    for (String x : r.getResources()) {
+                        if (x.equals(PermissionRequest.RESOURCE_VIDEO_CAPTURE)) cam = true;
+                        else if (x.equals(PermissionRequest.RESOURCE_AUDIO_CAPTURE)) mic = true;
+                    }
+                    if (!cam && !mic) {
+                        r.deny();
+                        return;
+                    }
+                    if ((cam && setting("permCam", "ask").equals("block")) || (mic && setting("permMic", "ask").equals("block"))) {
+                        r.deny();
+                        return;
+                    }
+                    final boolean fc = cam, fm = mic;
+                    String what = fc && fm ? "camera and microphone" : fc ? "camera" : "microphone";
+                    new AlertDialog.Builder(MainActivity.this).setTitle(host(r.getOrigin().toString()))
+                            .setMessage("Allow this site to use your " + what + "?")
+                            .setPositiveButton("Allow", new android.content.DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(android.content.DialogInterface d, int w) {
+                                    ArrayList<String> need = new ArrayList<>();
+                                    if (fc && checkSelfPermission(Manifest.permission.CAMERA) != android.content.pm.PackageManager.PERMISSION_GRANTED)
+                                        need.add(Manifest.permission.CAMERA);
+                                    if (fm && checkSelfPermission(Manifest.permission.RECORD_AUDIO) != android.content.pm.PackageManager.PERMISSION_GRANTED)
+                                        need.add(Manifest.permission.RECORD_AUDIO);
+                                    if (need.isEmpty()) {
+                                        r.grant(r.getResources());
+                                    } else {
+                                        pendingPerm = r;
+                                        requestPermissions(need.toArray(new String[0]), PERM_WEB);
+                                    }
+                                }
+                            })
+                            .setNegativeButton("Block", new android.content.DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(android.content.DialogInterface d, int w) {
+                                    r.deny();
+                                }
+                            })
+                            .setOnCancelListener(new android.content.DialogInterface.OnCancelListener() {
+                                @Override
+                                public void onCancel(android.content.DialogInterface d) {
+                                    r.deny();
+                                }
+                            }).show();
+                }
+            });
+        }
+
+        @Override
+        public void onGeolocationPermissionsShowPrompt(final String origin, final GeolocationPermissions.Callback cb) {
+            if (setting("permLoc", "ask").equals("block")) {
+                cb.invoke(origin, false, false);
+                return;
+            }
+            new AlertDialog.Builder(MainActivity.this).setTitle(host(origin)).setMessage("Allow this site to use your location?")
+                    .setPositiveButton("Allow", new android.content.DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(android.content.DialogInterface d, int w) {
+                            if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                                cb.invoke(origin, true, false);
+                            } else {
+                                pendingGeoCb = cb;
+                                pendingGeoOrigin = origin;
+                                requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, PERM_GEO);
+                            }
+                        }
+                    })
+                    .setNegativeButton("Block", new android.content.DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(android.content.DialogInterface d, int w) {
+                            cb.invoke(origin, false, false);
+                        }
+                    })
+                    .setOnCancelListener(new android.content.DialogInterface.OnCancelListener() {
+                        @Override
+                        public void onCancel(android.content.DialogInterface d) {
+                            cb.invoke(origin, false, false);
+                        }
+                    }).show();
+        }
+
+        @Override
         public void onCloseWindow(WebView window) {
             for (Tab x : new ArrayList<>(tabs)) if (x.wv == window) closeTab(x.id);
         }
@@ -1509,7 +1949,15 @@ public class MainActivity extends Activity {
             main.post(new Runnable() {
                 @Override
                 public void run() {
-                    if (m.equals("back")) {
+                    if ((m.equals("history") || m.equals("downloads")) && flag("lockHist", false) && !mode.equals("settings")) {
+                        final String mm = m, aa = arg;
+                        authThen(new Runnable() {
+                            @Override
+                            public void run() {
+                                show(mm, aa);
+                            }
+                        });
+                    } else if (m.equals("back")) {
                         activate(cur);
                     } else if (m.equals("tabs")) {
                         if (mode.equals("web") && cur != null) captureThumb(cur);
@@ -1551,7 +1999,16 @@ public class MainActivity extends Activity {
             main.post(new Runnable() {
                 @Override
                 public void run() {
-                    activate(MainActivity.this.newTab(null, priv));
+                    if (priv && flag("lockPriv", false)) {
+                        authThen(new Runnable() {
+                            @Override
+                            public void run() {
+                                activate(MainActivity.this.newTab(null, true));
+                            }
+                        });
+                    } else {
+                        activate(MainActivity.this.newTab(null, priv));
+                    }
                 }
             });
         }
@@ -1561,8 +2018,18 @@ public class MainActivity extends Activity {
             main.post(new Runnable() {
                 @Override
                 public void run() {
-                    Tab t = findTab(id);
-                    if (t != null) activate(t);
+                    final Tab t = findTab(id);
+                    if (t == null) return;
+                    if (t.priv && flag("lockPriv", false) && t != cur) {
+                        authThen(new Runnable() {
+                            @Override
+                            public void run() {
+                                activate(t);
+                            }
+                        });
+                    } else {
+                        activate(t);
+                    }
                 }
             });
         }
@@ -1663,7 +2130,8 @@ public class MainActivity extends Activity {
                         applyBarPos();
                     } else if (k.equals("scrollMode")) {
                         if (!v.equals("hide")) setToolbars(false);
-                    } else if (k.equals("textZoom") || k.equals("autoplay") || k.equals("block3p")) {
+                    } else if (k.equals("textZoom") || k.equals("autoplay") || k.equals("block3p") || k.equals("jsOn")
+                            || k.equals("cookiesOn") || k.equals("safeBrowse")) {
                         for (Tab t : tabs) applyWebPrefs(t);
                     } else if (k.equals("lock")) {
                         if (v.equals("true")) {
@@ -1680,7 +2148,10 @@ public class MainActivity extends Activity {
                         }
                     } else if (k.equals("wall")) {
                         if (v.equals("custom")) pushWallpaper();
-                    } else if (k.equals("adblock") || k.equals("darkPages") || k.equals("forceZoom")) {
+                    } else if (k.equals("adblock") || k.equals("darkPages") || k.equals("forceZoom") || k.equals("fpProtect")
+                            || k.equals("dnt") || k.equals("gpc") || k.equals("deamp") || k.equals("webrtc") || k.equals("bgPlay")
+                            || k.equals("vidToolbar") || k.equals("vidMenu") || k.equals("ytRecs") || k.equals("ytShorts")
+                            || k.equals("touchSearch")) {
                         rebuildPageScript();
                         for (Tab t : tabs) applyScripts(t);
                         if (cur != null && cur.wv != null) cur.wv.reload();
@@ -1723,6 +2194,87 @@ public class MainActivity extends Activity {
                         startActivityForResult(Intent.createChooser(i, "Choose wallpaper"), WALL_REQ);
                     } catch (Exception e) {
                         toast("No gallery app found");
+                    }
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void delPlaylist(final String url) {
+            main.post(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        JSONArray n = new JSONArray();
+                        for (int i = 0; i < playlist.length(); i++) {
+                            JSONObject o = playlist.getJSONObject(i);
+                            if (!url.equals(o.optString("url"))) n.put(o);
+                        }
+                        playlist = n;
+                    } catch (JSONException ignored) {
+                    }
+                    saveSoon();
+                    pushState();
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void deleteData(final String json) {
+            main.post(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        JSONObject o = new JSONObject(json);
+                        wipe(o.optBoolean("hist"), o.optBoolean("cookies"), o.optBoolean("cache"), o.optBoolean("bms"), o.optBoolean("dls"), o.optLong("since", 0));
+                        toast("Selected data deleted");
+                    } catch (Exception ignored) {
+                    }
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void clearSite(final String h) {
+            main.post(new Runnable() {
+                @Override
+                public void run() {
+                    MainActivity.this.clearSite(h);
+                    toast("Data for " + h + " deleted");
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void exportBookmarks() {
+            main.post(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        Intent i = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+                        i.addCategory(Intent.CATEGORY_OPENABLE);
+                        i.setType("text/html");
+                        i.putExtra(Intent.EXTRA_TITLE, "pravah-bookmarks.html");
+                        startActivityForResult(i, EXP_REQ);
+                    } catch (Exception e) {
+                        toast("No file manager found");
+                    }
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void importBookmarks() {
+            main.post(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                        i.addCategory(Intent.CATEGORY_OPENABLE);
+                        i.setType("*/*");
+                        startActivityForResult(i, IMP_REQ);
+                    } catch (Exception e) {
+                        toast("No file manager found");
                     }
                 }
             });
@@ -1993,6 +2545,26 @@ public class MainActivity extends Activity {
                     }
                 }
                 break;
+            case "autofill":
+                try {
+                    Intent ai = new Intent(Settings.ACTION_REQUEST_SET_AUTOFILL_SERVICE);
+                    ai.setData(Uri.parse("package:" + getPackageName()));
+                    startActivity(ai);
+                } catch (Exception e) {
+                    toast("Autofill settings are not available on this phone");
+                }
+                break;
+            case "passwords":
+                activate(newTab("https://passwords.google.com", false));
+                break;
+            case "privatedns":
+                toast("Open Network & internet > Private DNS");
+                try {
+                    startActivity(new Intent(Settings.ACTION_WIRELESS_SETTINGS));
+                } catch (Exception e) {
+                    startActivity(new Intent(Settings.ACTION_SETTINGS));
+                }
+                break;
             case "notifications":
                 try {
                     Intent ni = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
@@ -2016,6 +2588,7 @@ public class MainActivity extends Activity {
                 }
                 break;
             case "exit":
+                wipeOnExit();
                 saveNow();
                 finishAndRemoveTask();
                 break;

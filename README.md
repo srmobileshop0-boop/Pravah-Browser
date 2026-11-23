@@ -22,6 +22,9 @@ Fast, private, ad-free Android browser. Created by Anil Yadav.
 - Quetta/Opera-style Settings: Search Engine, Appearance (wallpaper, font, night mode, themes, Address bar top/bottom, Scrolling behavior), Extensions (built-in), Video Options, Download Settings, Accessibility (text size, force zoom), Privacy Guard, Lock Access (phone screen lock), Manage Personal Data, default browser, notifications, share, About, feedback
 - Menu sheet: theme switch, Bookmarks / History / Downloads / Private tab tiles, Set as default browser, quick bottom row
 
+- v1.3: new 3D orbiting-ring intro (once only), redesigned start page, local profile sign-in card
+- Settings pages: Search Engine (Google, DuckDuckGo, Brave, Bing, Ecosia, Yahoo, custom, suggestions), Video Options (listen in background, video toolbar, video menu, YouTube options), Privacy Guard (ads & trackers, HTTPS-only, fingerprint, script control, cookies, app redirects, site permissions, Advanced: Safe Browsing, DNT, De-AMP, GPC, Secure DNS shortcut, WebRTC), Lock Access (app, private tabs, history & downloads), Manage Personal Data (delete data, delete on exit, delete site data, autofill, import/export bookmarks), Download Settings (ask first, location, external downloader)
+
 ## Files
 - `app/src/main/java/com/pravah/browser/MainActivity.java` - browser engine (tabs, downloads, bridge)
 - `AdBlocker.java` - network-level ad/tracker blocking
