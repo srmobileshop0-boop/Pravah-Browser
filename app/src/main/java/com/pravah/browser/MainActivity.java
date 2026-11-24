@@ -91,7 +91,7 @@ public class MainActivity extends Activity {
 
     static final int FILE_REQ = 77, PERM_REQ = 78, LOCK_REQ = 79, WALL_REQ = 80, ROLE_REQ = 81, AUTH_REQ = 82, EXP_REQ = 83, IMP_REQ = 84, PERM_WEB = 85, PERM_GEO = 86;
     static final String[][] THEMES = {
-            {"daylight", "#F6F1E9", "0"}, {"sky", "#EAF4FF", "0"},
+            {"daylight", "#FFFFFF", "0"}, {"sky", "#EAF4FF", "0"},
             {"midnight", "#0F1226", "1"}, {"amoled", "#000000", "1"}};
     static final String[] ENGINE_URLS = {
             "google", "https://www.google.com/search?q=",
@@ -134,12 +134,14 @@ public class MainActivity extends Activity {
     View spacerView;
     int settingsDepth = 0;
     volatile boolean uiOverlay = false;
+    boolean manualFs = false;
     String lastLoadUrl = "";
     long lastLoadAt = 0;
     boolean toolbarsHidden = false, unlocked = false, authBusy = false;
     long toolbarToggleAt = 0, bgAt = 0;
     static final String[][] SETTING_DEFAULTS = {
-            {"addrBar", "top"}, {"scrollMode", "always"}, {"uiFont", "default"}, {"wall", "none"},
+            {"addrBar", "top"}, {"scrollMode", "always"}, {"barBtn", "home"}, {"swipeFs", "true"}, {"swipeTabs", "true"}, {"fullUrl", "false"},
+            {"homeUrl", ""}, {"mReader", "true"}, {"mZoom", "true"}, {"mFind", "true"}, {"mDesktop", "true"}, {"mA2hs", "true"}, {"mDev", "false"}, {"uiFont", "default"}, {"wall", "none"},
             {"textZoom", "100"}, {"autoplay", "true"}, {"block3p", "false"}, {"askDl", "false"},
             {"lock", "false"}, {"forceZoom", "false"}, {"fsRotate", "auto"},
             {"bgPlay", "true"}, {"vidToolbar", "true"}, {"vidMenu", "true"}, {"ytRecs", "false"}, {"ytShorts", "false"},
@@ -341,6 +343,10 @@ public class MainActivity extends Activity {
             ui.evaluateJavascript("App.closeOverlay()", null);
             return;
         }
+        if (manualFs && toolbarsHidden) {
+            setToolbars(false);
+            return;
+        }
         if (mode.equals("settings") && settingsDepth > 0) {
             ui.evaluateJavascript("App.settingsBack()", null);
             return;
@@ -475,6 +481,7 @@ public class MainActivity extends Activity {
     void setToolbars(boolean hidden) {
         if (hidden == toolbarsHidden) return;
         toolbarsHidden = hidden;
+        if (!hidden) manualFs = false;
         toolbarToggleAt = SystemClock.elapsedRealtime();
         top.setVisibility(hidden || !mode.equals("web") ? View.GONE : View.VISIBLE);
         spacerView.setVisibility(hidden ? View.GONE : View.VISIBLE);
@@ -931,6 +938,11 @@ public class MainActivity extends Activity {
             o.put("loading", cur.loading);
             o.put("progress", cur.progress);
             o.put("bookmarked", isBookmarked(u));
+            o.put("barBtn", setting("barBtn", "home"));
+            o.put("fullUrl", flag("fullUrl", false));
+            o.put("swipeFs", flag("swipeFs", true));
+            o.put("swipeTabs", flag("swipeTabs", true));
+            o.put("pos", setting("addrBar", "top"));
             top.evaluateJavascript("Top.set(" + js(o) + ")", null);
         } catch (JSONException ignored) {
         }
@@ -1180,11 +1192,12 @@ public class MainActivity extends Activity {
             @Override
             public void onScrollChange(View v, int x, int y, int ox, int oy) {
                 if (!mode.equals("web") || cur == null || cur.wv != v || menuOpen) return;
-                if (!setting("scrollMode", "always").equals("hide")) return;
+                boolean autoHide = setting("scrollMode", "always").equals("hide");
+                if (!autoHide && !toolbarsHidden) return;
                 if (SystemClock.elapsedRealtime() - toolbarToggleAt < 500) return;
                 int dy = y - oy;
                 if (y <= dp(4) || dy < -dp(10)) setToolbars(false);
-                else if (dy > dp(12)) setToolbars(true);
+                else if (autoHide && dy > dp(12)) setToolbars(true);
             }
         });
         applyDesktop(t);
@@ -2219,6 +2232,9 @@ public class MainActivity extends Activity {
                         applyTheme();
                     } else if (k.equals("addrBar")) {
                         applyBarPos();
+                        pushTop();
+                    } else if (k.equals("barBtn") || k.equals("fullUrl") || k.equals("swipeFs") || k.equals("swipeTabs")) {
+                        pushTop();
                     } else if (k.equals("scrollMode")) {
                         if (!v.equals("hide")) setToolbars(false);
                     } else if (k.equals("textZoom") || k.equals("autoplay") || k.equals("block3p") || k.equals("jsOn")
@@ -2589,10 +2605,114 @@ public class MainActivity extends Activity {
         }
     }
 
+    void runAsset(String name) {
+        if (cur == null || cur.wv == null || isBlank(cur)) return;
+        String code = readAsset(name);
+        if (code != null && !code.isEmpty()) cur.wv.evaluateJavascript(code, null);
+    }
+
+    void zoomDialog() {
+        final String[] labels = {"50%", "75%", "90%", "100%", "110%", "125%", "150%", "175%", "200%", "250%"};
+        final String[] vals = {"50", "75", "90", "100", "110", "125", "150", "175", "200", "250"};
+        int sel = 3;
+        String curv = setting("textZoom", "100");
+        for (int i = 0; i < vals.length; i++) if (vals[i].equals(curv)) sel = i;
+        new AlertDialog.Builder(this)
+                .setTitle("Page zoom")
+                .setSingleChoiceItems(labels, sel, new android.content.DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(android.content.DialogInterface d, int which) {
+                        new Bridge().setSetting("textZoom", vals[which]);
+                        d.dismiss();
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    void addToHome() {
+        if (cur == null || isBlank(cur) || cur.url == null || cur.url.isEmpty()) return;
+        try {
+            if (Build.VERSION.SDK_INT >= 26) {
+                android.content.pm.ShortcutManager sm = (android.content.pm.ShortcutManager) getSystemService(Context.SHORTCUT_SERVICE);
+                if (sm != null && sm.isRequestPinShortcutSupported()) {
+                    Intent vi = new Intent(Intent.ACTION_VIEW, Uri.parse(cur.url));
+                    vi.setClass(this, MainActivity.class);
+                    String label = (cur.title == null || cur.title.isEmpty()) ? host(cur.url) : cur.title;
+                    if (label.length() > 24) label = label.substring(0, 24);
+                    android.content.pm.ShortcutInfo info = new android.content.pm.ShortcutInfo.Builder(this, "pv" + Math.abs(cur.url.hashCode()))
+                            .setShortLabel(label)
+                            .setLongLabel(label)
+                            .setIcon(android.graphics.drawable.Icon.createWithResource(this, getApplicationInfo().icon))
+                            .setIntent(vi)
+                            .build();
+                    sm.requestPinShortcut(info, null);
+                    return;
+                }
+            }
+            toast("Your launcher does not support adding shortcuts");
+        } catch (Exception e) {
+            toast("Could not add to home screen");
+        }
+    }
+
     void doAction(String name) {
         switch (name) {
             case "reload":
                 if (cur != null && cur.wv != null) cur.wv.reload();
+                break;
+            case "homeBtn": {
+                String hu = setting("homeUrl", "");
+                if (!hu.isEmpty()) loadInCur(hu);
+                else goHome();
+                break;
+            }
+            case "back":
+                if (mode.equals("web") && cur != null && cur.wv != null && cur.wv.canGoBack()) cur.wv.goBack();
+                else goHome();
+                break;
+            case "forward":
+                if (cur != null && cur.wv != null && cur.wv.canGoForward()) cur.wv.goForward();
+                break;
+            case "newtab":
+                activate(newTab(null, false));
+                break;
+            case "favorites":
+                show("bookmarks", "");
+                break;
+            case "extension":
+                show("settings", "");
+                main.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        ui.evaluateJavascript("App.gotoSettings('ext')", null);
+                    }
+                }, 200);
+                break;
+            case "fullscreen":
+                if (mode.equals("web")) {
+                    manualFs = true;
+                    setToolbars(true);
+                }
+                break;
+            case "tabs":
+                if (mode.equals("web") && cur != null) captureThumb(cur);
+                show("tabs", "");
+                break;
+            case "reader":
+                runAsset("reader.js");
+                break;
+            case "find":
+                runAsset("findbar.js");
+                break;
+            case "devtools":
+                runAsset("devtools.js");
+                break;
+            case "zoom":
+                zoomDialog();
+                break;
+            case "a2hs":
+                addToHome();
                 break;
             case "stop":
                 if (cur != null && cur.wv != null) cur.wv.stopLoading();

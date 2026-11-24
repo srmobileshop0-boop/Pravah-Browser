@@ -432,6 +432,48 @@ html[data-font=casual],html[data-font=casual] :is(button,input){font-family:casu
 #addsc .acts{display:flex;gap:10px;margin-top:18px}
 #addsc .acts button{flex:1;height:46px;border-radius:23px;border:1px solid var(--line);background:var(--surface2);font-weight:700;font-size:15px}
 #addsc .acts .yes{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+/* ---------- Home v3: clean white ---------- */
+#p-home{background:var(--bg)}
+#p-home:not(.wp) .hbg{display:none}
+.htop .gr small{display:block;font-size:12.5px;font-weight:600;color:var(--sub);letter-spacing:.2px}
+.htop .gr b{display:block;font-size:24px;font-weight:800;letter-spacing:-.4px}
+.hero2{padding:0 0 10px}
+.lgx{position:relative;width:172px;height:172px;filter:drop-shadow(0 16px 22px rgba(0,70,255,.24))}
+.lgx img.base{position:absolute;inset:0;width:100%;height:100%;display:block}
+.lgx canvas,.lgx img.ov{position:absolute;left:26.32%;top:16.03%;width:48.48%;height:48.48%;display:block}
+.lgx canvas{border-radius:50%}
+.hero2 .tag{margin-top:4px;font-size:11px;letter-spacing:2.4px}
+.scw{background:none!important;border:0!important;box-shadow:none!important;padding:8px 0 0!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+.sc .tl{border-radius:20px;background:var(--surface2);border:1px solid var(--line)}
+#p-home.wp .sc .tl{background:#fff}
+.sc .tn{font-size:12.5px;font-weight:600}
+.hint{margin-top:2px}
+.quick{display:grid!important;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
+.quick button{display:flex;flex-direction:column;align-items:center;gap:7px;padding:12px 2px 10px;border-radius:20px;background:var(--surface);border:1px solid var(--line);box-shadow:0 4px 14px rgba(15,23,42,.06);font-size:12px;font-weight:700;color:var(--text);height:auto}
+.quick button .ic{width:40px;height:40px;padding:9px;border-radius:50%;box-sizing:border-box}
+.quick button:nth-child(1) .ic{background:#FFF1E0;color:#F08A00}
+.quick button:nth-child(2) .ic{background:#E8EEFF;color:#3452D9}
+.quick button:nth-child(3) .ic{background:#E2F6E6;color:#138808}
+.quick button:nth-child(4) .ic{background:#FFE9F1;color:#D6336C}
+#p-home.wp .quick button{background:rgba(255,255,255,.16)}
+#p-home.wp .quick button .ic{background:rgba(255,255,255,.9)}
+#p-home .sbox{box-shadow:0 8px 24px rgba(15,23,42,.10)}
+#p-home .engs{margin-top:10px}#p-home .eng{height:42px}
+/* ---------- Customize address bar ---------- */
+.abp{display:flex;align-items:center;gap:6px;margin:14px 14px 6px;padding:8px 10px;border-radius:22px;background:var(--surface2)}
+.abp i{flex:1}.abp span{display:grid;place-items:center;width:34px;height:34px;border-radius:50%}
+.abp .a1{background:rgba(255,77,106,.12);color:#E64562}.abp .ic{width:20px;height:20px}
+.abp .cnt2{border:2px solid var(--text);border-radius:8px;width:26px;height:26px;font-size:13px;font-weight:700}
+.qr.ar{height:auto;min-height:62px;gap:14px}
+.rd{flex:none;width:26px;height:26px;border-radius:50%;border:2.5px solid var(--text);box-sizing:border-box;display:block;position:relative}
+.rd.on::after{content:"";position:absolute;inset:4px;border-radius:50%;background:var(--text)}
+.rd.chk{background:var(--text)}.rd.chk::after{content:"";position:absolute;left:6px;top:3px;width:6px;height:11px;border:solid var(--bg);border-width:0 2.5px 2.5px 0;transform:rotate(45deg)}
+.chl{margin-left:auto;color:#E64562;font-weight:700;font-size:14.5px}
+.phs{display:flex;gap:10px;padding:10px}
+.phn{flex:1;display:flex;flex-direction:column;align-items:center;gap:10px;padding:14px 0 14px;border-radius:24px;border:0;background:transparent;color:var(--sub)}
+.phn.on{background:var(--surface2);color:var(--text)}
+.phn svg{width:70px;height:92px}
+#sheet{max-height:88vh;overflow-y:auto}
 </style>
 </head>
 <body>
@@ -479,6 +521,12 @@ html[data-font=casual],html[data-font=casual] :is(button,input){font-family:casu
 <symbol id="o-info" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/><circle cx="12" cy="7.8" r="1" fill="currentColor"/></g></symbol>
 <symbol id="o-mail" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13.5L6 5.5h12l2 8V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-5.5z"/><path d="M4 13.5h4.6l1 2h4.8l1-2H20"/><path d="M9.5 9h5"/></g></symbol>
 <symbol id="o-ext" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 14.4l4.8-4.8m0 0H10.6m3.8 0v3.8"/></g></symbol>
+<symbol id="o-book" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 5h5.5a4 4 0 0 1 4 4v11a3 3 0 0 0-3-3H2.5z"/><path d="M21.5 5H16a4 4 0 0 0-4 4v11a3 3 0 0 1 3-3h6.5z"/></g></symbol>
+<symbol id="o-zoom" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="7"/><path d="M21 21l-5.2-5.2M10.5 7.5v6M7.5 10.5h6"/></g></symbol>
+<symbol id="o-find" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v3"/><path d="M14 3v5h5"/><circle cx="15.5" cy="16.5" r="3"/><path d="M17.7 18.7L21 22"/></g></symbol>
+<symbol id="o-a2hs" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="14" height="15" rx="3"/><path d="M3 8h14M20 15v6M17 18h6"/></g></symbol>
+<symbol id="o-code" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3.5"/><path d="M10 9.5L7.5 12l2.5 2.5M14 9.5l2.5 2.5-2.5 2.5"/></g></symbol>
+<symbol id="o-dots" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="19" r="2" fill="currentColor"/></symbol>
 <symbol id="o-wall" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V6.5A2.5 2.5 0 0 1 6.5 4H9M15 4h2.5A2.5 2.5 0 0 1 20 6.5V9M20 15v2.5a2.5 2.5 0 0 1-2.5 2.5H15M9 20H6.5A2.5 2.5 0 0 1 4 17.5V15"/><path d="M7.6 16.4l3.4-4 2.4 2.8 1.6-1.8 2 3"/><circle cx="15.4" cy="8.8" r="1.1"/></g></symbol>
 <symbol id="o-appicon" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5a8.5 8.5 0 0 0 0 17" fill="currentColor"/></g></symbol>
 <symbol id="o-font" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2.4"/><path d="M8.4 16.6L12 7.4l3.6 9.2M9.6 13.6h4.8"/></g></symbol>
@@ -522,9 +570,9 @@ html[data-font=casual],html[data-font=casual] :is(button,input){font-family:casu
 <!-- HOME -->
 <section class="page on" id="p-home">
    <div class="hbg"></div>
-   <div class="htop"><div class="gr"><small id="greet">Welcome</small><b>Pravah Browser</b></div><div class="hbtns"><button class="ib" id="h-wall" aria-label="Wallpaper"><svg class="ic"><use href="#o-wall"/></svg></button><button class="ib" id="h-set" aria-label="Settings"><svg class="ic"><use href="#tune"/></svg></button></div></div>
+   <div class="htop"><div class="gr"><small>Pravah Browser</small><b id="greet">Welcome</b></div><div class="hbtns"><button class="ib" id="h-wall" aria-label="Wallpaper"><svg class="ic"><use href="#o-wall"/></svg></button><button class="ib" id="h-set" aria-label="Settings"><svg class="ic"><use href="#tune"/></svg></button></div></div>
    <div class="hmain">
-     <div class="hero2"><div class="mark2"><img src="logo.png" alt=""></div><div class="tag">Fast &middot; Private &middot; Ad-free</div></div>
+     <div class="hero2"><div class="lgx"><img class="base" src="logo.png" alt=""><canvas id="homeGlobe" width="240" height="240"></canvas><img class="ov" src="rings.png" alt=""></div><div class="tag">Fast &middot; Private &middot; Ad-free</div></div>
      <div class="sbox">
        <svg class="ic"><use href="#search"/></svg>
        <input id="hq" type="text" placeholder="Search or type a URL" enterkeyhint="search" autocomplete="off" autocapitalize="off" spellcheck="false">
@@ -629,7 +677,7 @@ function customEng(){try{const a=JSON.parse(S.settings.customEngines||'[]');retu
 function engList(){return ENG_ORDER.map(k=>({k,n:ENG[k].n,d:ENG[k].d})).concat(customEng().map((c,i)=>({k:'c'+i,n:c.n,d:host((c.u||'').replace('%s','')),custom:1})))}
 function engName(k){const e=engList().find(x=>x.k===k);return e?e.n:'Google'}
 const engIco=(k,sz)=>{const e=engList().find(x=>x.k===k)||{n:'?',d:'google.com'};const g=EGL[k]?EGL[k]():`<b style="color:var(--accent);font-size:${Math.round(sz*.6)}px;font-weight:900">${esc((e.n[0]||'?').toUpperCase())}</b>`;return `<span class="fv" style="background:none;width:${sz}px;height:${sz}px"><span class="fbk">${g}</span><img src="${favUrl(e.d,64)}" onerror="this.remove()" alt=""></span>`};
-const THEMES=[{k:'daylight',n:'Daylight',dk:0,bg:'#F6F1E9',a:'#6C4DFF',b:'#00B8D9',s:'#fff'},{k:'sky',n:'Sky',dk:0,bg:'#EAF4FF',a:'#1E6BFF',b:'#00C2FF',s:'#fff'},{k:'midnight',n:'Midnight',dk:1,bg:'#0F1226',a:'#8B7BFF',b:'#22D3EE',s:'#1B2040'},{k:'amoled',n:'AMOLED Black',dk:1,bg:'#000',a:'#2EE6A6',b:'#7C5CFF',s:'#131315'}];
+const THEMES=[{k:'daylight',n:'Daylight',dk:0,bg:'#FFFFFF',a:'#6C4DFF',b:'#00B8D9',s:'#fff'},{k:'sky',n:'Sky',dk:0,bg:'#EAF4FF',a:'#1E6BFF',b:'#00C2FF',s:'#fff'},{k:'midnight',n:'Midnight',dk:1,bg:'#0F1226',a:'#8B7BFF',b:'#22D3EE',s:'#1B2040'},{k:'amoled',n:'AMOLED Black',dk:1,bg:'#000',a:'#2EE6A6',b:'#7C5CFF',s:'#131315'}];
 const TMODES=[['system','auto','System'],['light','sun','Light'],['dark','moon','Dark']];
 
 /* Original-style fallback logos (used only if the real favicon can't load) */
@@ -829,7 +877,8 @@ function themeCard(key){return t=>`<button class="th${S.settings[key]===t.k?' se
 /* ---------- settings (Quetta-style, with sub-pages) ---------- */
 let sp=[],lastSp='',wallData='',pickCb=null,icb=null;
 let delSel={hist:true,cookies:false,cache:false,bms:false,dls:false,range:'all'};
-const SUBT={search:'Search Engine',touch:'Touch to Search',look:'Appearance',wall:'Wallpaper',ext:'Extensions',video:'Video Options',vbg:'Listen In Background',vtool:'Show Video Toolbar',vmenu:'Show Video Menu',yt:'YouTube Option',dls:'Download Settings',acc:'Accessibility',guard:'Privacy Guard',g_ads:'Ads & Trackers Blocker',g_https:'Always Use HTTPS',g_fp:'Remove Fingerprint',g_js:'Script Control',g_cookie:'Cookie Management',g_redir:'Stop App Redirects',g_site:'Site Settings',g_adv:'Advanced',g_rtc:'WebRTC IP Protection',lock:'Lock Access',data:'Manage Personal Data',d_del:'Delete Browsing Data',d_exit:'Delete on Exit',d_spec:'Delete Specific Data'};
+const SUBT={search:'Search Engine',touch:'Touch to Search',look:'Appearance',abar:'Customize Address Bar',cmenu:'Customize Menu',wall:'Wallpaper',ext:'Extensions',video:'Video Options',vbg:'Listen In Background',vtool:'Show Video Toolbar',vmenu:'Show Video Menu',yt:'YouTube Option',dls:'Download Settings',acc:'Accessibility',guard:'Privacy Guard',g_ads:'Ads & Trackers Blocker',g_https:'Always Use HTTPS',g_fp:'Remove Fingerprint',g_js:'Script Control',g_cookie:'Cookie Management',g_redir:'Stop App Redirects',g_site:'Site Settings',g_adv:'Advanced',g_rtc:'WebRTC IP Protection',lock:'Lock Access',data:'Manage Personal Data',d_del:'Delete Browsing Data',d_exit:'Delete on Exit',d_spec:'Delete Specific Data'};
+const BARBTNS=[['home','Home','home'],['back','Back','back'],['forward','Forward','fwd'],['newtab','New Tab','plus'],['refresh','Refresh','refresh'],['extension','Extension','o-puzzle'],['favorites','Favorites','star0']];
 const FONTS=[['default','Default'],['serif','Serif'],['mono','Monospace'],['casual','Casual']];
 const WALLS=[['none','None',''],['w1','Aurora','linear-gradient(160deg,#0f2027,#2c5364 45%,#3ddc97)'],['w2','Sunset','linear-gradient(160deg,#ff9966,#ff5e62 50%,#7b2ff7)'],['w3','Ocean','linear-gradient(160deg,#00c6ff,#0072ff 55%,#1b1464)'],['w4','Forest','linear-gradient(160deg,#134e5e,#71b280)'],['w5','Candy','linear-gradient(160deg,#f6d365,#fda085 45%,#f093fb)'],['w6','Night sky','linear-gradient(160deg,#0f0c29,#302b63 55%,#24243e)']];
 const PERM=[['ask','Ask first'],['block','Blocked']];
@@ -857,6 +906,16 @@ function sPage(id){
     <div class="q" style="margin-top:14px">${qr('','Touch to Search',{go:'touch',chev:1})}</div>`}
   case 'touch':return `${qsec('Touch to search')}<div class="q">${qt('touchSearch','','Touch to Search')}</div>${info('o-search','Touch to Search','Select any word or sentence on a page and a Search button appears. Tap it to search in a new tab.')}`;
   case 'wall':return `<div class="q">${qr('o-wall','Choose wallpaper',{act:'wpicker',sub:wallName()})}${qr('o-wall','Choose from gallery',{act:'wallpick',sub:'Pick a photo for your start page'})}</div>${qn('The wallpaper is shown on the Pravah start page. You can also tap the picture icon at the top of the start page.')}`;
+  case 'abar':{
+    const bb=st.barBtn||'home',pos=st.addrBar==='bottom'?'bottom':'top',cb=BARBTNS.find(x=>x[0]===bb)||BARBTNS[0];
+    const rows=BARBTNS.map(x=>`<button class="qr ar" data-set="barBtn:${x[0]}"><span class="rd${bb===x[0]?' on':''}"></span><span class="t">${x[1]}</span>${x[0]==='home'?`<span class="chl" data-act="custhome">Custom Homepage</span>`:''}</button>`).join('');
+    const ph=p=>`<button class="phn${pos===p?' on':''}" data-set="addrBar:${p}"><svg viewBox="0 0 64 84"><rect x="8" y="4" width="48" height="76" rx="12" fill="none" stroke="currentColor" stroke-width="3"/><rect x="18" y="${p==='top'?13:62}" width="28" height="7" rx="3.5" fill="currentColor" opacity=".4"/></svg><span class="rd${pos===p?' chk':''}"></span></button>`;
+    const tg=(k,t,sub)=>`<div class="q" style="margin-top:14px"><div class="qr" data-tg="${k}"><span class="t">${t}<small>${sub}</small></span><div class="tg${getB(k)?' on':''}"></div></div></div>`;
+    return `<div class="q"><div class="abp"><span class="a1">${ico(cb[2])}</span><span class="a2">${ico('o-guard')}</span><i></i><span class="cnt2">${S.tabs.length}</span><span class="a3">${ico('o-dots')}</span></div>${rows}</div>
+    ${qsec('Edit address bar')}<div class="q phs">${ph('top')}${ph('bottom')}</div>
+    <div class="q" style="margin-top:14px"><div class="qr" data-act="autohide"><span class="t">Auto-hide Bar<small>Auto-hide address bar when scrolling</small></span><div class="tg${st.scrollMode==='hide'?' on':''}"></div></div></div>
+    ${tg('swipeFs','Swipe for Fullscreen','Swipe down for fullscreen with bottom bar, up with top bar')}${tg('swipeTabs','Swipe to View Tabs','Swipe up to view all tabs with bottom bar, down with top bar')}${tg('fullUrl','Show Full URL','Display full URL in the address bar')}`}
+  case 'cmenu':return [['mReader','o-book','Show Reader'],['mZoom','o-zoom','Page Zoom'],['mFind','o-find','Find on Page'],['mDesktop','desktop','Request Desktop Site'],['mA2hs','o-a2hs','Add to Home Screen'],['mDev','o-code','Developer Tools']].map(x=>`<div class="q" style="margin-bottom:14px">${qt(x[0],x[1],x[2])}</div>`).join('');
   case 'look':return `${qsec('Theme')}<div class="q" style="padding:12px"><div class="seg3 wide">${TMODES.map(x=>`<button class="tm${tm===x[0]?' on':''}" data-tm="${x[0]}">${ico(x[1])}${x[0]==='system'?'System default':x[2]}</button>`).join('')}</div></div>
     <div class="qh">Light style</div><div class="q"><div class="themes">${THEMES.filter(t=>!t.dk).map(themeCard('lightStyle')).join('')}</div></div>
     <div class="qh">Dark style</div><div class="q"><div class="themes">${THEMES.filter(t=>t.dk).map(themeCard('darkStyle')).join('')}</div></div>
@@ -907,7 +966,7 @@ function sPage(id){
     const prof=nm?`<div class="q qp"><div class="av me">${esc(nm[0].toUpperCase())}</div><div class="pt"><b>${esc(nm)}</b><small>${esc(st.profEmail||'Signed in on this device')}</small></div><button class="pill" data-act="logout">Log out</button></div>`
       :`<div class="q qp"><div class="av">${ico('user')}</div><div class="pt"><b>Sign in to Pravah</b><small>Personalise your browser</small></div><button class="pill" data-act="login">Log in</button></div>`;
     return `${prof}
-    ${qsec('General')}<div class="q">${qr('o-search','Search Engine',{go:'search',sub:esc(engName(st.engine||'google'))})}${qr('o-face','Appearance',{go:'look'})}${qr('o-puzzle','Extensions',{go:'ext',tag:'Built-in'})}${qr('o-play','Video Options',{go:'video'})}${qr('o-dl','Download Settings',{go:'dls'})}${qr('o-access','Accessibility',{go:'acc'})}</div>
+    ${qsec('General')}<div class="q">${qr('o-search','Search Engine',{go:'search',sub:esc(engName(st.engine||'google'))})}${qr('o-face','Appearance',{go:'look'})}${qr('o-addr','Customize Address Bar',{go:'abar'})}${qr('o-gear','Customize Menu',{go:'cmenu'})}${qr('o-puzzle','Extensions',{go:'ext',tag:'Built-in'})}${qr('o-play','Video Options',{go:'video'})}${qr('o-dl','Download Settings',{go:'dls'})}${qr('o-access','Accessibility',{go:'acc'})}</div>
     ${qsec('Privacy &amp; Security')}<div class="q">${qr('o-guard','Privacy Guard',{go:'guard'})}${qr('o-unlock','Lock Access',{go:'lock'})}${qr('o-person','Manage Personal Data',{go:'data'})}</div>
     ${qsec('About')}<div class="q">${qr('o-heart','Set Pravah As Default Browser',{act:'default',sub:def?'Pravah is your default browser':''})}${qr('o-bell','Notifications',{act:'notif',ext:1})}${qr('o-share','Share Pravah',{act:'sharepravah',ext:1})}${qr('o-info','About',{act:'about'})}${qr('o-mail','Feedback',{act:'feedback'})}</div>
     <div class="q" style="margin-top:14px">${qr('power','Exit Pravah',{act:'exit',cls:'danger'})}</div>`}
@@ -960,6 +1019,8 @@ function sAct(a){
   else if(a==='delrange')openPick('Time range',RANGES,delSel.range,v=>{delSel.range=v;renderSettings()});
   else if(a==='wallpick')N.pickWallpaper();
   else if(a==='wpicker')window.openWallPicker();
+  else if(a==='autohide')N.setSetting('scrollMode',st.scrollMode==='hide'?'always':'hide');
+  else if(a==='custhome')openInput('Custom homepage','Leave empty to open the Pravah start page.',[{label:'ADDRESS',ph:'https://example.com',val:st.homeUrl||'',type:'url'}],'Save',v=>{let u=(v[0]||'').trim();if(u&&!/^[a-z][a-z0-9+.-]*:\/\//i.test(u))u='https://'+u;N.setSetting('homeUrl',u)});
   else if(a==='default')N.action('default');
   else if(a==='notif')N.action('notifications');
   else if(a==='sharepravah')N.action('sharepravah');
@@ -1072,7 +1133,7 @@ function menuHtml(){
     <div class="mtheme"><div class="seg3 wide">${seg}</div></div>
     <div class="mtiles">${tile('bookmarks','o-bm','Bookmarks')}${tile('history','o-clock','History')}${tile('downloads','o-dl','Downloads')}${tile('playlist','o-play','Playlist')}</div>
     <div class="msep"></div>
-    <div class="mplain">${item('newtab','plus','New tab')}${item('private','incog','Private')}${item('darkpages','o-moon','Night',{on:getB('darkPages')})}${item('desktop','desktop','Desktop',{off:!has,on:S.desktop})}${item('share','o-share','Share',{off:!has})}${item('settings','o-gear','Settings')}</div>
+    <div class="mplain">${item('newtab','plus','New tab')}${item('private','incog','Private')}${item('darkpages','o-moon','Night',{on:getB('darkPages')})}${getB('mDesktop')?item('desktop','desktop','Desktop',{off:!has,on:S.desktop}):''}${getB('mReader')?item('reader','o-book','Reader',{off:!has}):''}${getB('mFind')?item('find','o-find','Find',{off:!has}):''}${getB('mZoom')?item('zoom','o-zoom','Zoom',{off:!has}):''}${getB('mA2hs')?item('a2hs','o-a2hs','Add to Home',{off:!has}):''}${getB('mDev')?item('devtools','o-code','Dev tools',{off:!has}):''}${item('share','o-share','Share',{off:!has})}${item('settings','o-gear','Settings')}</div>
     ${isDef?'':`<button class="mdef" data-m="default"><img src="logo.png" alt="">Set Pravah As Default Browser</button>`}
   </div>
   <div class="mbar">${mb('forward','fwd','Forward',{off:!S.canForward})}${mb('bookmark',S.bookmarked?'star':'star0',S.bookmarked?'Bookmarked':'Add bookmark',{off:!has,on:S.bookmarked})}${mb('home','home','Start page')}${mb('exit','power','Exit')}${mb('reload','refresh','Reload',{off:!has})}</div>`;
@@ -1197,6 +1258,7 @@ window.App={
   },
   settingsBack,
   setWallpaper(d){wallData=d||'';applyLook();if(S.mode==='settings')renderSettings()},
+  gotoSettings(id){sp=id?[id]:[];renderSettings();rep()},
   closeOverlay(){if(window.closeOverlay)window.closeOverlay()},
   setTheme(t){S.theme=t;document.documentElement.dataset.theme=t},
   setDownloads(a){const j=JSON.stringify(a);S.downloads=a||[];if(S.mode==='downloads'&&j!==dlLast){dlLast=j;renderDownloads()}},

@@ -2,10 +2,10 @@
 <resources>
     <!-- Light parent on purpose: web pages only get their own dark style when the user turns it on. -->
     <style name="AppTheme" parent="android:Theme.DeviceDefault.Light.NoActionBar">
-        <item name="android:windowBackground">#070B24</item>
-        <item name="android:statusBarColor">#070B24</item>
-        <item name="android:navigationBarColor">#070B24</item>
-        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowBackground">#FFFFFF</item>
+        <item name="android:statusBarColor">#FFFFFF</item>
+        <item name="android:navigationBarColor">#FFFFFF</item>
+        <item name="android:windowLightStatusBar">true</item>
         <item name="android:forceDarkAllowed">false</item>
     </style>
 </resources>

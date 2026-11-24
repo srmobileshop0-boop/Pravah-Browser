@@ -3,35 +3,38 @@
 (function(){
 'use strict';
 
-/* ================= rotating globe (intro only the globe moves) ================= */
-(function(){
-  const cv=document.getElementById('globeCv');
-  if(!cv||!window.GLOBE)return;
-  const G=window.GLOBE,N2=cv.width,Rc=N2/2,ctx=cv.getContext('2d');
-  const intro=document.getElementById('intro');
-  let tex=null,shade=null,Wt=0,Ht=0;
-  const img=(src,cb)=>{const i=new Image();i.onload=()=>cb(i);i.src=src};
-  const px=(i,w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.drawImage(i,0,0,w,h);return x.getImageData(0,0,w,h).data};
-  let n=0,idx,vr,vf,u0,sv;
-  function setup(){
-    const lim=0.95*Rc,tmp=[];
-    for(let y=0;y<N2;y++)for(let x=0;x<N2;x++){
-      const nx=(x+.5-Rc)/Rc,ny=(Rc-y-.5)/Rc,r2=nx*nx+ny*ny;
-      if(r2<=.95*.95)tmp.push([x,y,nx,ny,r2])
-    }
-    n=tmp.length;idx=new Int32Array(n);vr=new Int32Array(n);vf=new Float32Array(n);u0=new Float32Array(n);sv=new Float32Array(n);
-    for(let k=0;k<n;k++){
-      const t=tmp[k],x=t[0],y=t[1],nz=Math.sqrt(Math.max(0,1-t[4]));
-      const lat=Math.asin(Math.max(-1,Math.min(1,t[3]))),lam=Math.atan2(t[2],nz);
-      idx[k]=(y*N2+x)*4;
-      const v=(0.5-lat/Math.PI)*Ht-.5;let v0=Math.floor(v);vf[k]=v-v0;vr[k]=Math.max(0,Math.min(Ht-2,v0));
-      u0[k]=((lam+Math.PI)/(2*Math.PI))*Wt;
-      const sx=Math.min(303,Math.floor((x+.5)/N2*304)),sy=Math.min(303,Math.floor((y+.5)/N2*304));
-      sv[k]=shade[(sy*304+sx)*4]/127;
-    }
+/* ================= rotating globe (only the globe moves; rings, background, text stay frozen) ================= */
+const GL={ready:false,loading:false,cbs:[],tex:null,shade:null,Wt:0,Ht:0};
+function glImg(src,cb){const i=new Image();i.onload=()=>cb(i);i.src=src}
+function glPx(i,w,h){const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.drawImage(i,0,0,w,h);return x.getImageData(0,0,w,h).data}
+function glInit(cb){
+  if(!window.GLOBE)return;
+  if(GL.ready){cb();return}
+  GL.cbs.push(cb);if(GL.loading)return;GL.loading=true;
+  glImg(window.GLOBE.tex,ti=>{
+    GL.Wt=ti.naturalWidth;GL.Ht=ti.naturalHeight;GL.tex=glPx(ti,GL.Wt,GL.Ht);
+    glImg(window.GLOBE.shade,si=>{GL.shade=glPx(si,304,304);GL.ready=true;GL.cbs.splice(0).forEach(f=>f())});
+  });
+}
+function makeGlobe(cv){
+  const N2=cv.width,Rc=N2/2,ctx=cv.getContext('2d'),Wt=GL.Wt,Ht=GL.Ht,tex=GL.tex,shade=GL.shade;
+  const tmp=[];
+  for(let y=0;y<N2;y++)for(let x=0;x<N2;x++){
+    const nx=(x+.5-Rc)/Rc,ny=(Rc-y-.5)/Rc,r2=nx*nx+ny*ny;
+    if(r2<=.95*.95)tmp.push([x,y,nx,ny,r2])
+  }
+  const n=tmp.length,idx=new Int32Array(n),vr=new Int32Array(n),vf=new Float32Array(n),u0=new Float32Array(n),sv=new Float32Array(n);
+  for(let k=0;k<n;k++){
+    const t=tmp[k],x=t[0],y=t[1],nz=Math.sqrt(Math.max(0,1-t[4]));
+    const lat=Math.asin(Math.max(-1,Math.min(1,t[3]))),lam=Math.atan2(t[2],nz);
+    idx[k]=(y*N2+x)*4;
+    const v=(0.5-lat/Math.PI)*Ht-.5,v0=Math.floor(v);vf[k]=v-v0;vr[k]=Math.max(0,Math.min(Ht-2,v0));
+    u0[k]=((lam+Math.PI)/(2*Math.PI))*Wt;
+    const sx=Math.min(303,Math.floor((x+.5)/N2*304)),sy=Math.min(303,Math.floor((y+.5)/N2*304));
+    sv[k]=shade[(sy*304+sx)*4]/127;
   }
   const out=ctx.createImageData(N2,N2),od=out.data;
-  function frame(shift){
+  return{Wt,frame(shift){
     for(let k=0;k<n;k++){
       let u=u0[k]-shift;u=((u%Wt)+Wt)%Wt;
       const ui=u|0,uf=u-ui,x0=ui,x1=(ui+1)%Wt,r0=vr[k]*Wt,r1=r0+Wt,fy=vf[k],s=sv[k];
@@ -42,17 +45,28 @@
       od[o+3]=255;
     }
     ctx.putImageData(out,0,0);
-  }
-  let t0=0;
-  function loop(t){
-    if(!intro||!intro.isConnected)return;
-    if(!t0)t0=t;
-    frame(((t-t0)/7000)*Wt); /* one full turn every 7 s */
+  }};
+}
+/* intro: one turn every 7 s while the intro is on screen */
+(function(){
+  const cv=document.getElementById('globeCv'),intro=document.getElementById('intro');
+  if(!cv||!intro)return;
+  glInit(()=>{
+    const g=makeGlobe(cv);g.frame(0);let t0=0;
+    const loop=t=>{if(!intro.isConnected)return;if(!t0)t0=t;g.frame(((t-t0)/7000)*g.Wt);requestAnimationFrame(loop)};
     requestAnimationFrame(loop);
-  }
-  img(G.tex,ti=>{
-    Wt=ti.naturalWidth;Ht=ti.naturalHeight;tex=px(ti,Wt,Ht);
-    img(G.shade,si=>{shade=px(si,304,304);setup();frame(0);requestAnimationFrame(loop)});
+  });
+})();
+/* start page: the globe keeps turning (one turn every 10 s) whenever the start page is visible */
+(function(){
+  const cv=document.getElementById('homeGlobe'),pgh=document.getElementById('p-home');
+  if(!cv||!pgh)return;
+  glInit(()=>{
+    const g=makeGlobe(cv);g.frame(0);const t0=Date.now();
+    setInterval(()=>{
+      if(document.hidden||!pgh.classList.contains('on')||document.getElementById('intro'))return;
+      g.frame((((Date.now()-t0)/10000)%1)*g.Wt);
+    },42);
   });
 })();
 

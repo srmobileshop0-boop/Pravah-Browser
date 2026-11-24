@@ -39,3 +39,9 @@ Fast, private, ad-free Android browser. Created by Anil Yadav.
 - Wallpaper button on top of the start page: Tech / Nature / Modern wallpapers, preview + Set Wallpaper, or your own photo
 - Links open once, in the same tab (no second page); ad links / ad popups are dropped
 - Stronger ad blocking: many more ad networks, ad-host navigation blocked, auto-redirects to ads stopped, invisible click-jack layers removed
+
+## v1.5
+- White background everywhere (window, status/navigation bar, start page) like the Jio app
+- Start page: logo globe keeps rotating (rings, text and blue tile stay still), cleaner white layout, colourful quick buttons
+- Settings > Customize Address Bar: left button (Home / Back / Forward / New Tab / Refresh / Extension / Favorites), Custom Homepage, top/bottom bar, Auto-hide Bar, Swipe for Fullscreen, Swipe to View Tabs, Show Full URL
+- Settings > Customize Menu: Reader, Page Zoom, Find on Page, Desktop Site, Add to Home Screen, Developer Tools on/off
