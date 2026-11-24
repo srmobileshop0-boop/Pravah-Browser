@@ -474,6 +474,41 @@ html[data-font=casual],html[data-font=casual] :is(button,input){font-family:casu
 .phn.on{background:var(--surface2);color:var(--text)}
 .phn svg{width:70px;height:92px}
 #sheet{max-height:88vh;overflow-y:auto}
+/* ---------- Home v4: polished ---------- */
+#p-home .hmain{padding:6px 18px 100px}
+.lgx{width:176px;height:176px;filter:drop-shadow(0 14px 20px rgba(20,70,255,.22))}
+.lgx::after{content:"";position:absolute;left:1.8%;top:1.8%;width:96.4%;height:98%;border-radius:35%;padding:3px;box-sizing:border-box;background:conic-gradient(from 200deg,#FF9933,#FFC27A 14%,#2F6BFF 36%,#19B5FF 52%,#138808 76%,#FF9933);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);mask-composite:exclude;pointer-events:none}
+.hero2{padding:2px 0 14px}
+.hero2 .tag{margin-top:6px;color:#8A93A6;font-size:10.5px;letter-spacing:3px}
+/* search */
+#p-home .sbox{height:60px;border-radius:30px;padding:0 7px 0 8px;gap:8px;border:0;background:#fff;box-shadow:0 10px 30px rgba(34,60,160,.14),0 0 0 1.5px rgba(47,107,255,.14);position:relative}
+#p-home .sbox::before{content:"";position:absolute;inset:0;border-radius:30px;padding:2px;background:linear-gradient(90deg,#FF9933,#e9edf7 45%,#138808);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);mask-composite:exclude;pointer-events:none}
+#p-home .sbox>.ic{width:42px;height:42px;padding:10px;border-radius:50%;background:#EEF3FF;color:#2F6BFF;box-sizing:border-box;flex:none}
+#p-home .sbox input{font-size:16.5px;font-weight:500;color:var(--text)}
+#p-home .sbox input::placeholder{color:#8A93A6;font-weight:500}
+#p-home .sbox .go{width:46px;height:46px;background:linear-gradient(135deg,#FF9933 0%,#2F6BFF 55%,#138808 120%);color:#fff;box-shadow:0 6px 14px rgba(47,107,255,.35)}
+#p-home .sbox .go .ic{color:#fff;width:22px;height:22px;background:none;padding:0}
+/* search engines: one segmented control */
+#p-home .engs{margin-top:14px;padding:4px;gap:4px;border-radius:20px;background:#F1F4FA;border:0}
+#p-home .eng{height:40px;border:0;border-radius:16px;background:transparent;font-size:13.5px;font-weight:700;color:#5B6478;box-shadow:none}
+#p-home .eng.sel{background:#fff;color:#14161C;box-shadow:0 3px 12px rgba(34,60,160,.16);border:0}
+/* shortcuts */
+.scw{margin-top:18px!important;padding:14px 4px 4px!important}
+.scw::before{content:"Shortcuts";display:block;font-size:15px;font-weight:800;letter-spacing:-.2px;margin:0 6px 4px;color:var(--text)}
+.sc .tl{width:60px;height:60px;border-radius:22px;background:#fff;border:1px solid rgba(15,23,42,.07);box-shadow:0 6px 16px rgba(34,60,160,.10)}
+.sc .tn{font-size:12.5px;font-weight:600;color:#2A2F3C;margin-top:1px}
+.sc .tile[data-k=x] .tl{border-color:#000}
+.sc .addt .tl{background:#F4F6FC;border:1.5px dashed #B6C0D8;box-shadow:none}
+.sc .addt .ic{color:#2F6BFF}
+#p-home.wp .scw::before{color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.5)}
+.hint{font-size:11.5px;color:#9AA3B5;margin:6px 0 0}
+/* quick buttons */
+.quick{margin-top:16px}
+.quick button{border-radius:22px;padding:13px 2px 11px;border:1px solid rgba(15,23,42,.06);box-shadow:0 8px 20px rgba(34,60,160,.09);font-size:12px;font-weight:700}
+.quick button .ic{width:42px;height:42px;padding:10px}
+/* top buttons */
+.htop .ib{width:44px;height:44px;border:1px solid rgba(15,23,42,.07);box-shadow:0 6px 16px rgba(34,60,160,.10);background:#fff}
+.htop .gr small{color:#8A93A6}
 </style>
 </head>
 <body>
@@ -718,7 +753,7 @@ function updateHome(){updateGreet();if(window.scSync)window.scSync();$$('.eng').
 /* ---------- bottom bar ---------- */
 let tabList=false,tabPriv=false,tabQuery='';
 function renderBar(){
-  const bar=$('#bar'),show=['home','web','tabs'].includes(S.mode);
+  const bar=$('#bar'),show=['home','tabs'].includes(S.mode);
   bar.classList.toggle('on',show);if(!show)return;
   const cnt=`<span class="cnt">${S.tabs.length}</span>`;
   if(S.mode==='tabs')bar.innerHTML=`<button id="b-view" aria-label="Switch view">${ico(tabList?'grid':'list')}</button><button id="b-hist" aria-label="History">${ico('history')}</button><button class="fab" id="b-new" aria-label="New tab">${ico('plus')}</button><button id="b-cnt" aria-label="Close tab switcher">${cnt}</button><button id="b-menu" aria-label="Menu">${ico('user')}</button>`;

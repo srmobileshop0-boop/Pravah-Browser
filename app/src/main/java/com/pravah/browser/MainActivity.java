@@ -484,7 +484,7 @@ public class MainActivity extends Activity {
         if (!hidden) manualFs = false;
         toolbarToggleAt = SystemClock.elapsedRealtime();
         top.setVisibility(hidden || !mode.equals("web") ? View.GONE : View.VISIBLE);
-        spacerView.setVisibility(hidden ? View.GONE : View.VISIBLE);
+        spacerView.setVisibility(hidden || mode.equals("web") ? View.GONE : View.VISIBLE);
         ui.setTranslationY(hidden ? dp(76) : 0);
     }
 
@@ -521,11 +521,13 @@ public class MainActivity extends Activity {
 
     void setExpanded(boolean e) {
         FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) ui.getLayoutParams();
-        int h = (e || introActive) ? ViewGroup.LayoutParams.MATCH_PARENT : dp(76);
+        boolean barless = !e && !introActive && mode.equals("web");
+        int h = (e || introActive) ? ViewGroup.LayoutParams.MATCH_PARENT : (barless ? dp(1) : dp(76));
         if (lp.height != h) {
             lp.height = h;
             ui.setLayoutParams(lp);
         }
+        ui.setVisibility(barless ? View.GONE : View.VISIBLE);
     }
 
     // ------------------------------------------------------------------ theme
@@ -839,7 +841,7 @@ public class MainActivity extends Activity {
         modeArg = arg == null ? "" : arg;
         boolean web = m.equals("web");
         toolbarsHidden = false;
-        spacerView.setVisibility(View.VISIBLE);
+        spacerView.setVisibility(web ? View.GONE : View.VISIBLE);
         ui.setTranslationY(0);
         top.setVisibility(web ? View.VISIBLE : View.GONE);
         setExpanded(!web || menuOpen);
@@ -943,6 +945,7 @@ public class MainActivity extends Activity {
             o.put("swipeFs", flag("swipeFs", true));
             o.put("swipeTabs", flag("swipeTabs", true));
             o.put("pos", setting("addrBar", "top"));
+            o.put("tabs", tabs.size());
             top.evaluateJavascript("Top.set(" + js(o) + ")", null);
         } catch (JSONException ignored) {
         }
@@ -2660,6 +2663,18 @@ public class MainActivity extends Activity {
         switch (name) {
             case "reload":
                 if (cur != null && cur.wv != null) cur.wv.reload();
+                break;
+            case "menu":
+                menuOpen = true;
+                setToolbars(false);
+                setExpanded(true);
+                pushState();
+                ui.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        ui.evaluateJavascript("App.openMenu()", null);
+                    }
+                });
                 break;
             case "homeBtn": {
                 String hu = setting("homeUrl", "");

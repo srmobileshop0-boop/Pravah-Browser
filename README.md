@@ -45,3 +45,8 @@ Fast, private, ad-free Android browser. Created by Anil Yadav.
 - Start page: logo globe keeps rotating (rings, text and blue tile stay still), cleaner white layout, colourful quick buttons
 - Settings > Customize Address Bar: left button (Home / Back / Forward / New Tab / Refresh / Extension / Favorites), Custom Homepage, top/bottom bar, Auto-hide Bar, Swipe for Fullscreen, Swipe to View Tabs, Show Full URL
 - Settings > Customize Menu: Reader, Page Zoom, Find on Page, Desktop Site, Add to Home Screen, Developer Tools on/off
+
+## v1.6
+- No bottom bar on web pages (only on the start page and tabs); address bar now has tab count and menu (three dots), a Stop button shows while loading
+- App icon: white background with the logo in the centre (like the Jio app)
+- Start page: tricolor line around the logo border, polished search box, segmented search-engine switch, Shortcuts section

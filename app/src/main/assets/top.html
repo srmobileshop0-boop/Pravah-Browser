@@ -16,7 +16,7 @@ body{padding:8px 10px;display:flex}
 #txt small{font-weight:500;color:var(--sub);margin-left:8px;font-size:12.5px}
 button.b{flex:none;width:40px;height:40px;border-radius:50%;border:0;background:none;color:var(--text);display:flex;align-items:center;justify-content:center}
 button.b:active{background:var(--surface2)}
-#st.on{color:#F5A524}
+.tbx{width:26px;height:26px;border:2.2px solid currentColor;border-radius:8px;font-size:13px;font-weight:800;display:grid;place-items:center;line-height:1}
 #pg{position:absolute;left:0;bottom:0;height:3px;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .15s linear,opacity .25s}
 </style>
 </head>
@@ -29,6 +29,7 @@ button.b:active{background:var(--surface2)}
 <symbol id="t-fwd" viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></symbol>
 <symbol id="t-plus" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></symbol>
 <symbol id="t-puz" viewBox="0 0 24 24"><path d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5C13 2.12 11.88 1 10.5 1S8 2.12 8 3.5V5H4c-1.1 0-1.99.9-1.99 2v3.8H3.5c1.49 0 2.7 1.21 2.7 2.7s-1.21 2.7-2.7 2.7H2V20c0 1.1.9 2 2 2h3.8v-1.5c0-1.49 1.21-2.7 2.7-2.7 1.49 0 2.7 1.21 2.7 2.7V22H17c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5S21.88 11 20.5 11z"/></symbol>
+<symbol id="t-dots" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></symbol>
 <symbol id="close" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></symbol>
 <symbol id="star" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></symbol>
 <symbol id="star0" viewBox="0 0 24 24"><path d="M22 9.24l-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.63-7.03L22 9.24zM12 15.4l-3.76 2.27 1-4.28-3.32-2.88 4.38-.38L12 6.1l1.71 4.04 4.38.38-3.32 2.88 1 4.28L12 15.4z"/></symbol>
@@ -37,8 +38,9 @@ button.b:active{background:var(--surface2)}
   <button class="b" id="lb" aria-label="Shortcut"><svg class="ic"><use href="#t-home"/></svg></button>
   <svg class="ic" id="lk"><use href="#lock"/></svg>
   <button id="txt"><span id="host">Search or type URL</span></button>
-  <button class="b" id="st" aria-label="Bookmark"><svg class="ic"><use href="#star0"/></svg></button>
-  <button class="b" id="rl" aria-label="Reload"><svg class="ic"><use href="#refresh"/></svg></button>
+  <button class="b" id="rl" aria-label="Stop" style="display:none"><svg class="ic"><use href="#close"/></svg></button>
+  <button class="b" id="tb" aria-label="Tabs"><span class="tbx" id="tbn">1</span></button>
+  <button class="b" id="mn" aria-label="Menu"><svg class="ic"><use href="#t-dots"/></svg></button>
   <div id="pg"></div>
 </div>
 <script>
@@ -61,10 +63,9 @@ window.Top={
     pos=o.pos==='bottom'?'bottom':'top';swFs=o.swipeFs!==false;swTabs=o.swipeTabs!==false;
     $('#lb use').setAttribute('href',ICONS[barBtn]||'#t-home');
     $('#lk').classList.toggle('ok',!!o.secure);
-    $('#st').classList.toggle('on',!!o.bookmarked);
-    $('#st use').setAttribute('href',o.bookmarked?'#star':'#star0');
+    $('#tbn').textContent=o.tabs||1;
     loading=!!o.loading;
-    $('#rl use').setAttribute('href',loading?'#close':'#refresh');
+    $('#rl').style.display=loading?'flex':'none';
     const pg=$('#pg');
     if(loading){pg.style.opacity=1;pg.style.width=Math.max(6,o.progress||0)+'%'}
     else{pg.style.width='100%';setTimeout(()=>{pg.style.opacity=0;setTimeout(()=>{pg.style.width='0'},260)},120)}
@@ -80,8 +81,9 @@ $('#pill').addEventListener('touchend',e=>{
   if(fs){if(swFs)N.topAction('fullscreen')}else if(swTabs)N.topAction('tabs');
 },{passive:true});
 $('#txt').onclick=()=>{if(Date.now()-swiped<400)return;N.nav('search','')};
-$('#rl').onclick=()=>N.topAction(loading?'stop':'reload');
-$('#st').onclick=()=>N.topAction('bookmark');
+$('#rl').onclick=()=>N.topAction('stop');
+$('#tb').onclick=()=>N.topAction('tabs');
+$('#mn').onclick=()=>N.topAction('menu');
 </script>
 </body>
 </html>
