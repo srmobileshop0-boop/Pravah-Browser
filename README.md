@@ -31,3 +31,11 @@ Fast, private, ad-free Android browser. Created by Anil Yadav.
 - `assets/ui.html` - start page, tabs, history, bookmarks, settings, menu
 - `assets/top.html` - address bar; `assets/theme.css` - theme colours
 - `assets/adblock.js` - in-page ad removal (YouTube, Google, Bing, Yahoo)
+
+## v1.4
+- New logo (tricolour globe tile) everywhere: app icon, start page, About, intro
+- Intro (first launch after this update): only the globe rotates; rings, blue background and logo text stay frozen; P-R-A-V-A-H letters unchanged
+- Start page redesigned: big logo, glass shortcut panel, X added; touch & hold any shortcut and drag it anywhere, x to remove, + to add your own
+- Wallpaper button on top of the start page: Tech / Nature / Modern wallpapers, preview + Set Wallpaper, or your own photo
+- Links open once, in the same tab (no second page); ad links / ad popups are dropped
+- Stronger ad blocking: many more ad networks, ad-host navigation blocked, auto-redirects to ads stopped, invisible click-jack layers removed

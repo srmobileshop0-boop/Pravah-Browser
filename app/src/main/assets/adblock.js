@@ -26,17 +26,34 @@
     '.masthead-ad-control', 'ytm-promoted-sparkles-web-renderer', 'ytm-promoted-video-renderer',
     'ytm-companion-ad-renderer', 'ytm-statement-banner-renderer', 'ytm-banner-promo-renderer',
     'ad-slot-renderer', 'ytm-ad-slot-renderer', '.ytm-ad-slot', 'ytm-in-feed-ad-layout-renderer',
-    'ytd-merch-shelf-renderer', 'ytd-ad-slot-renderer ~ *:empty'
+    'ytd-merch-shelf-renderer', 'ytd-ad-slot-renderer ~ *:empty',
+    /* Generic ad containers (news / blog / video / Indian sites) */
+    'amp-ad', 'amp-embed', 'amp-sticky-ad', '[data-ad-client]', '[data-ad-unit]', '[data-ad-format]',
+    'iframe[src*="googleads"]', 'iframe[src*="adservice"]', 'iframe[src*="adsterra"]', 'iframe[src*="popads"]', 'iframe[src*="/ads/"]',
+    'iframe[src*="exoclick"]', 'iframe[src*="propeller"]', 'iframe[src*="taboola"]', 'iframe[src*="outbrain"]',
+    '[id^="taboola"]', '[id^="outbrain"]', '.OUTBRAIN', '.taboola', '[id^="mgid"]', '[class*="mgid"]', '[id^="ezoic"]',
+    '[id^="ads-"]', '[id^="ad-container"]', '[id^="adcontainer"]', '[id="ad"]', '[id="ads"]', '[id="advert"]', '[id="advertisement"]',
+    '[class~="ad-banner"]', '[class~="ad-container"]', '[class~="ads-container"]', '[class~="ad-wrapper"]', '[class~="ad-slot"]',
+    '[class~="advert"]', '[class~="advertisement"]', '[class~="adsbox"]', '[class~="sticky-ad"]', '[class~="ad-sticky"]',
+    '[class~="popup-ad"]', '[class~="ad-popup"]', '[class~="sponsored-content"]', '[aria-label="Advertisement"]', '[aria-label="advertisement"]',
+    '[data-testid="ad"]', '[data-component="ad"]', '[data-ad]', '[data-adunit]'
   ].join(',');
   function addCss() {
     try {
+      var root = document.head || document.documentElement;
+      if (!root) return false;
+      if (document.querySelector('style[data-pravah="adblock"]')) return true;
       var st = document.createElement('style');
       st.setAttribute('data-pravah', 'adblock');
       st.textContent = sel + '{display:none!important}';
-      (document.head || document.documentElement).appendChild(st);
-    } catch (e) {}
+      root.appendChild(st);
+      return true;
+    } catch (e) { return false; }
   }
-  addCss();
+  if (!addCss()) {
+    var _tries = 0, _iv = setInterval(function () { if (addCss() || ++_tries > 300) clearInterval(_iv); }, 10);
+    document.addEventListener('DOMContentLoaded', addCss);
+  }
 
   /* ---------- 2. YouTube: strip ads from player data + auto-skip ---------- */
   if (isYT) {
@@ -176,10 +193,53 @@
     }, true);
   }
 
+  /* ---------- 3b. Click-jacking guard: invisible full-screen layers & ad links never fire ---------- */
+  var AD_HOST_RE = /(^|\.)(doubleclick|googlesyndication|googleadservices|adsterra|popads|popcash|propellerads|exoclick|juicyads|clickadu|hilltopads|adcash|trafficjunky|bidvertiser|a-ads|richpush|zedo|onclickads|monetag|mondiad|admaven|ad-maven|clickaine|tsyndicate|exdynsrv|exosrv|realsrv|adnxs|taboola|outbrain|mgid|revcontent|adskeeper|profitablecpmrate|highperformanceformat|effectivegatecpm|toprevenuegate|onclasrv|popunder)\./i;
+  var hostOf = function (u) { try { return new URL(u, location.href).hostname; } catch (e) { return ''; } };
+  var isInvisibleCover = function (el) {
+    try {
+      if (!el || el === document.body || el === document.documentElement) return false;
+      var cs = getComputedStyle(el);
+      if (cs.position !== 'fixed' && cs.position !== 'absolute') return false;
+      var r = el.getBoundingClientRect();
+      if (r.width < window.innerWidth * 0.85 || r.height < window.innerHeight * 0.6) return false;
+      var clear = parseFloat(cs.opacity) < 0.06 || cs.visibility === 'hidden' ||
+                  ((cs.backgroundColor === 'rgba(0, 0, 0, 0)' || cs.backgroundColor === 'transparent') && cs.backgroundImage === 'none' && !(el.innerText || '').trim() && !el.querySelector('img,video,canvas,input,button,form,p,h1,h2,h3'));
+      return clear && parseInt(cs.zIndex || '0', 10) >= 10;
+    } catch (e) { return false; }
+  };
+  var guard = function (e) {
+    try {
+      var t = e.target;
+      var a = t && t.closest ? t.closest('a[href]') : null;
+      if (a && AD_HOST_RE.test(hostOf(a.href))) { e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); return; }
+      var x = (e.touches && e.touches[0] ? e.touches[0].clientX : e.clientX), y = (e.touches && e.touches[0] ? e.touches[0].clientY : e.clientY);
+      var el = (typeof x === 'number') ? document.elementFromPoint(x, y) : null;
+      if (el && isInvisibleCover(el)) { el.style.setProperty('display', 'none', 'important'); e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); }
+    } catch (err) {}
+  };
+  document.addEventListener('click', guard, true);
+  document.addEventListener('touchstart', guard, { capture: true, passive: false });
+  try {
+    var _assign = null;
+    document.addEventListener('DOMContentLoaded', function () {
+      var kill = function () {
+        var n = document.querySelectorAll('div,section,aside,a');
+        for (var i = 0; i < n.length && i < 400; i++) {
+          if (n[i].getAttribute('data-pv-ad')) continue;
+          if (isInvisibleCover(n[i])) n[i].style.setProperty('display', 'none', 'important');
+        }
+      };
+      setTimeout(kill, 1500); setInterval(kill, 4000);
+    });
+  } catch (e) {}
+
   /* ---------- 4. Block script-created popups / window.open spam ---------- */
   try {
     var _open = window.open;
     window.open = function () {
+      var u = arguments[0] ? String(arguments[0]) : '';
+      if (u && AD_HOST_RE.test(hostOf(u))) return null;
       if (navigator.userActivation && navigator.userActivation.isActive) return _open.apply(window, arguments);
       return null;
     };

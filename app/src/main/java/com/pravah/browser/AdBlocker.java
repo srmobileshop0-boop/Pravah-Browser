@@ -28,9 +28,53 @@ final class AdBlocker {
             "popads.net", "popcash.net", "propellerads.com", "onclickads.net", "exoclick.com", "juicyads.com",
             "adsterra.com", "hilltopads.net", "clickadu.com", "trafficjunky.net", "adcash.com", "bidvertiser.com",
             "adk2.co", "a-ads.com", "richpush.co", "pushwoosh.com", "zedo.com",
+            // More ad networks / video ads / mobile ads
+            "smaato.net", "smaato.com", "chartboost.com", "ironsrc.com", "supersonicads.com", "tapjoy.com", "startappservice.com",
+            "mintegral.com", "pangleglobal.com", "byteoversea.com", "ads-api.tiktok.com", "doubleverify.com", "serving-sys.com",
+            "bidr.io", "tremorhub.com", "spotxchange.com", "stickyadstv.com", "adition.com", "mopub.com", "adtechus.com",
+            "adtech.de", "advertising.amazon.com", "yieldlab.net", "indexww.com", "triplelift.com", "33across.com", "gumgum.com",
+            "smartadserver.net", "improvedigital.com", "sovrn.com", "undertone.com", "adskeeper.com", "adskeeper.co.uk",
+            "ads.mail.ru", "an.yandex.ru", "yandexadexchange.net", "ezoic.net", "ezodn.com", "monetag.com", "mondiad.com",
+            "admaven.com", "ad-maven.com", "clickaine.com", "tsyndicate.com", "syndication.exdynsrv.com", "exdynsrv.com",
+            "exosrv.com", "realsrv.com", "juicyads.com", "popunder.net", "yllix.com", "evadav.com", "pushnami.com",
+            "bidgear.com", "adspyglass.com", "ero-advertising.com", "trafficstars.com", "tsyndicate.com", "adxpansion.com",
+            "wwads.cn", "adsco.re", "ad4m.at", "profitablecpmrate.com", "highperformanceformat.com", "highcpmrevenuegate.com",
+            "effectivegatecpm.com", "displayvertising.com", "toprevenuegate.com", "acscdn.com", "rtbsystem.com", "onclckmn.com",
+            "onclasrv.com", "pubfuture.com", "adexchangeprediction.com", "dtscout.com", "dtscdn.com", "cloudfront-ad.net",
+            "adnetworkperformance.com", "go.oclasrv.com", "ad.gt", "adsrvmedia.net", "mc.yandex.ru", "adriver.ru",
+            "app.link.ads", "inmobi.net", "applvn.com", "adjust.com.ads", "fyber.com", "vrtcal.com", "verve.com", "pubnative.net",
+            "liftoff.io", "moloco.com", "digitalturbine.com", "ogury.com", "adgear.com", "adgrx.com", "adscale.de",
             // Tracking
             "google-analytics.com", "hotjar.com", "mouseflow.com", "crazyegg.com", "branch.io", "app-measurement.com"
     ));
+
+    /** Hosts that are only trackers / link services, never opened as a page by the ad-navigation guard. */
+    private static final Set<String> NAV_SAFE = new HashSet<>(Arrays.asList("branch.io", "app-measurement.com", "google-analytics.com"));
+
+    /** True when the host (or a parent domain) is a known ad network. */
+    static boolean isAdHost(String host) {
+        if (host == null || host.isEmpty()) return false;
+        String h = host.toLowerCase(Locale.ROOT);
+        while (true) {
+            if (HOSTS.contains(h)) return !NAV_SAFE.contains(h);
+            int dot = h.indexOf('.');
+            if (dot < 0 || h.indexOf('.', dot + 1) < 0) break;
+            h = h.substring(dot + 1);
+        }
+        return false;
+    }
+
+    /** A URL shaped like an ad redirect / pop-under (used only for pages that open it without you tapping). */
+    static boolean looksLikeAdRedirect(String url) {
+        if (url == null) return false;
+        String u = url.toLowerCase(Locale.ROOT);
+        int hits = 0;
+        String[] keys = {"zoneid=", "zone_id=", "campaignid=", "campaign_id=", "clickid=", "click_id=", "subid=", "sub_id=",
+                "trkid=", "bannerid=", "creativeid=", "adid=", "ad_id=", "popunder", "pop_under", "popads", "/aff_c?", "/click?",
+                "utm_medium=pop", "utm_source=pop", "tracker.", "adsterra", "propeller", "clickadu"};
+        for (String k : keys) if (u.contains(k)) hits++;
+        return hits >= 2 || u.contains("popunder") || u.contains("pop_under") || u.contains("adsterra") || u.contains("clickadu");
+    }
 
     /** Ad click-through links (what you get when an ad is tapped): never opened. */
     static boolean isAdClick(String url, String host) {
@@ -69,6 +113,10 @@ final class AdBlocker {
         }
         // Generic well-known ad paths
         return u.contains("/pagead/ads") || u.contains("/gampad/ads") || u.contains("/doubleclick/")
-                || u.contains("adserver.") || u.contains("/adserve/");
+                || u.contains("adserver.") || u.contains("/adserve/") || u.contains("/adsbygoogle.js")
+                || u.contains("/showads") || u.contains("/popunder") || u.contains("/pop-under")
+                || u.contains("/ads/banner") || u.contains("/adframe") || u.contains("/ad-iframe")
+                || u.contains("/prebid") || u.contains("/ads.js") || u.contains("/adsbox")
+                || u.contains("/vast.xml") || u.contains("/vmap.xml") || u.contains("ad_banner");
     }
 }

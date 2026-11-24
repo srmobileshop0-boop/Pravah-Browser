@@ -133,6 +133,9 @@ public class MainActivity extends Activity {
     boolean saveQueued = false;
     View spacerView;
     int settingsDepth = 0;
+    volatile boolean uiOverlay = false;
+    String lastLoadUrl = "";
+    long lastLoadAt = 0;
     boolean toolbarsHidden = false, unlocked = false, authBusy = false;
     long toolbarToggleAt = 0, bgAt = 0;
     static final String[][] SETTING_DEFAULTS = {
@@ -165,8 +168,8 @@ public class MainActivity extends Activity {
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         sp = getSharedPreferences("pravah", MODE_PRIVATE);
         // The start-up intro plays only the first time the app is ever opened.
-        introActive = !sp.getBoolean("introSeen", false);
-        if (introActive) sp.edit().putBoolean("introSeen", true).apply();
+        introActive = !sp.getBoolean("introSeen14", false);
+        if (introActive) sp.edit().putBoolean("introSeen14", true).apply();
         loadData();
         adJs = readAsset("adblock.js");
         darkJs = readAsset("darkpage.js");
@@ -332,6 +335,10 @@ public class MainActivity extends Activity {
         }
         if (menuOpen) {
             ui.evaluateJavascript("document.getElementById('scrim').click()", null);
+            return;
+        }
+        if (uiOverlay) {
+            ui.evaluateJavascript("App.closeOverlay()", null);
             return;
         }
         if (mode.equals("settings") && settingsDepth > 0) {
@@ -972,8 +979,37 @@ public class MainActivity extends Activity {
         }
         url = upgrade(url);
         t.url = url;
+        if (dupLoad(url)) {
+            show("web", "");
+            return;
+        }
         t.wv.loadUrl(url);
         show("web", "");
+    }
+
+    /** true when this exact URL was just loaded (stops a page opening twice). */
+    boolean dupLoad(String url) {
+        long now = SystemClock.elapsedRealtime();
+        if (url != null && url.equals(lastLoadUrl) && now - lastLoadAt < 1500) return true;
+        lastLoadUrl = url;
+        lastLoadAt = now;
+        return false;
+    }
+
+    /** A link that wanted a new window: open it once, in the same tab; ads are dropped. */
+    void openLinkHere(Tab t, String url) {
+        if (url == null || t == null || url.isEmpty()) return;
+        String h = host(url);
+        if (flag("adblock", true) && (AdBlocker.isAdHost(h) || AdBlocker.isAdClick(url, h))) return;
+        if (!(url.startsWith("http://") || url.startsWith("https://"))) {
+            if (t.wv != null && !url.startsWith("about:") && !url.startsWith("javascript:")) handleScheme(t.wv, url);
+            return;
+        }
+        url = upgrade(url);
+        if (dupLoad(url)) return;
+        ensureWebView(t);
+        t.url = url;
+        t.wv.loadUrl(url);
     }
 
     boolean isBookmarked(String url) {
@@ -1668,7 +1704,7 @@ public class MainActivity extends Activity {
         public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest req) {
             if (req.isForMainFrame() && flag("adblock", true)) {
                 Uri mu = req.getUrl();
-                if (AdBlocker.isAdClick(mu.toString(), mu.getHost())) {
+                if (AdBlocker.isAdClick(mu.toString(), mu.getHost()) || AdBlocker.isAdHost(mu.getHost())) {
                     return new WebResourceResponse("text/html", "utf-8", new ByteArrayInputStream("<html><body></body></html>".getBytes()));
                 }
             }
@@ -1688,7 +1724,12 @@ public class MainActivity extends Activity {
                 handleAct(req.getUrl());
                 return true;
             }
-            if (flag("adblock", true) && AdBlocker.isAdClick(url, req.getUrl().getHost())) return true; // ad click: do nothing
+            if (flag("adblock", true)) {
+                String uh = req.getUrl().getHost();
+                if (AdBlocker.isAdClick(url, uh) || AdBlocker.isAdHost(uh)) return true; // ad click: do nothing
+                // a page that bounces you to an ad all by itself (no tap from you) is stopped
+                if (!req.hasGesture() && !req.isRedirect() && AdBlocker.looksLikeAdRedirect(url)) return true;
+            }
             if (url.startsWith("http://") && flag("httpsOnly", false)) {
                 String up = upgrade(url);
                 if (!up.equals(url)) {
@@ -1774,12 +1815,62 @@ public class MainActivity extends Activity {
         @Override
         public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
             if (!isUserGesture && flag("popups", true)) return false;
-            Tab nt = newTab(null, t.priv);
-            ensureWebView(nt);
+            if (isDialog) {
+                Tab nt = newTab(null, t.priv);
+                ensureWebView(nt);
+                WebView.WebViewTransport tr = (WebView.WebViewTransport) resultMsg.obj;
+                tr.setWebView(nt.wv);
+                resultMsg.sendToTarget();
+                activate(nt);
+                return true;
+            }
+            // Normal link / target=_blank: catch the address and open it ONCE in this same tab.
+            final Tab src = t;
+            final boolean[] fin = new boolean[1];
+            final WebView tmp = new WebView(MainActivity.this);
+            tmp.setWebViewClient(new WebViewClient() {
+                void take(final String url) {
+                    if (fin[0] || url == null || url.equals("about:blank")) return;
+                    fin[0] = true;
+                    main.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                tmp.stopLoading();
+                                tmp.destroy();
+                            } catch (Throwable ignored) {
+                            }
+                            openLinkHere(src, url);
+                        }
+                    });
+                }
+
+                @Override
+                public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest r) {
+                    take(r.getUrl().toString());
+                    return true;
+                }
+
+                @Override
+                public void onPageStarted(WebView v, String url, Bitmap favicon) {
+                    take(url);
+                }
+            });
+            main.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    if (fin[0]) return;
+                    fin[0] = true;
+                    try {
+                        tmp.stopLoading();
+                        tmp.destroy();
+                    } catch (Throwable ignored) {
+                    }
+                }
+            }, 8000);
             WebView.WebViewTransport tr = (WebView.WebViewTransport) resultMsg.obj;
-            tr.setWebView(nt.wv);
+            tr.setWebView(tmp);
             resultMsg.sendToTarget();
-            activate(nt);
             return true;
         }
 
@@ -2170,6 +2261,11 @@ public class MainActivity extends Activity {
                     deleteHistory(t, url);
                 }
             });
+        }
+
+        @JavascriptInterface
+        public void overlay(boolean on) {
+            uiOverlay = on;
         }
 
         @JavascriptInterface
