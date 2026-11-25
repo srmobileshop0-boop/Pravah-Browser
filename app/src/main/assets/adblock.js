@@ -234,6 +234,75 @@
     });
   } catch (e) {}
 
+  /* ---------- 3c. Ads with an "Ad" / "Sponsored" label, native ad strips and cam / affiliate widgets ---------- */
+  var LABEL_RE = /^(ad|ads|advertisement|advertisements|sponsored|promoted|sponsor|ad choices|ads by .*|sponsored by .*|विज्ञापन|प्रायोजित)$/i;
+  var WIDGET_HOST_RE = /(stripchat|strpst|strpjmp|xhamsterlive|xlivrdr|chaturbate|bongacams|bongacash|cam4|livejasmin|awempire|awltovhc|exoclick|exosrv|magsrv|pemsrv|trafficjunky|juicyads|clickadilla|plugrush|popcash|popads|propellerads|hilltopads|onclickads|adsterra|doubleclick|googlesyndication|taboola|outbrain|mgid|revcontent|adnxs|criteo)\./i;
+  var vw = function () { return Math.max(window.innerWidth || 0, 320); };
+  var safeToHide = function (el) {
+    if (!el || el === document.body || el === document.documentElement) return false;
+    var tag = el.tagName;
+    if (tag === 'MAIN' || tag === 'ARTICLE' || tag === 'BODY' || tag === 'HTML') return false;
+    if (el.querySelector && el.querySelector('video,h1,[role="main"],form[role="search"],input[type="search"]')) return false;
+    var r = el.getBoundingClientRect();
+    return r.height >= 40 && r.height <= 760 && r.width >= 60;
+  };
+  var hideBox = function (el) { try { el.style.setProperty('display', 'none', 'important'); el.setAttribute('data-pv-ad', '1'); } catch (e) {} };
+  var sweepLabels = function () {
+    try {
+      var cand = document.querySelectorAll('span,div,small,b,i,p,a,label');
+      var n = 0;
+      for (var i = 0; i < cand.length && n < 1500; i++, n++) {
+        var el = cand[i];
+        if (el.getAttribute('data-pv-ad') || el.children.length > 1) continue;
+        var tx = (el.textContent || '').trim();
+        if (tx.length < 2 || tx.length > 22 || !LABEL_RE.test(tx)) continue;
+        var up = el, best = null;
+        for (var d = 0; d < 7 && up && up.parentElement; d++) {
+          up = up.parentElement;
+          if (!safeToHide(up)) { if (best) break; else continue; }
+          var rw = up.getBoundingClientRect().width;
+          best = up;
+          if (rw >= vw() * 0.9) break;
+        }
+        if (best) hideBox(best);
+      }
+      var links = document.querySelectorAll('a[href],iframe[src]');
+      for (var k = 0; k < links.length && k < 800; k++) {
+        var a = links[k];
+        if (a.getAttribute('data-pv-ad')) continue;
+        var h = a.href || a.src || '';
+        if (!h || !WIDGET_HOST_RE.test(hostOf(h))) continue;
+        var c = a, box = a;
+        for (var q = 0; q < 4 && c.parentElement; q++) {
+          c = c.parentElement;
+          if (safeToHide(c) && (c.innerText || '').length < 400) box = c; else break;
+        }
+        hideBox(box === a ? a : box);
+      }
+      var heads = document.querySelectorAll('div,section,h2,h3,p,span');
+      for (var m = 0; m < heads.length && m < 1500; m++) {
+        var hd = heads[m];
+        if (hd.getAttribute('data-pv-ad') || hd.children.length > 2) continue;
+        var t2 = (hd.textContent || '').trim();
+        if (t2.length > 70 || t2.length < 12) continue;
+        if (/^chat with .{0,30}(girls|models|live).{0,20}now!?$/i.test(t2) || /^(live cams?|webcams?|meet .* online)$/i.test(t2)) {
+          var p2 = hd, bx = null;
+          for (var z = 0; z < 4 && p2.parentElement; z++) { p2 = p2.parentElement; if (safeToHide(p2)) bx = p2; }
+          if (bx) hideBox(bx);
+        }
+      }
+    } catch (e) {}
+  };
+  var sweepT = 0;
+  var scheduleSweep = function () { clearTimeout(sweepT); sweepT = setTimeout(sweepLabels, 350); };
+  document.addEventListener('DOMContentLoaded', function () {
+    sweepLabels();
+    try { new MutationObserver(scheduleSweep).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) {}
+    setInterval(sweepLabels, 3000);
+  });
+  window.addEventListener('load', sweepLabels);
+  window.addEventListener('scroll', scheduleSweep, { passive: true });
+
   /* ---------- 4. Block script-created popups / window.open spam ---------- */
   try {
     var _open = window.open;

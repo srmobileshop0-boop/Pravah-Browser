@@ -509,9 +509,89 @@ html[data-font=casual],html[data-font=casual] :is(button,input){font-family:casu
 /* top buttons */
 .htop .ib{width:44px;height:44px;border:1px solid rgba(15,23,42,.07);box-shadow:0 6px 16px rgba(34,60,160,.10);background:#fff}
 .htop .gr small{color:#8A93A6}
+/* ---------- Home v5 ---------- */
+#p-home .htop{padding:16px 16px 6px 22px}
+#p-home .htop .gr small{font-size:12.5px;font-weight:600;color:#8A93A6;letter-spacing:.2px}
+#p-home .htop .gr b{font-size:27px;font-weight:800;letter-spacing:-.7px}
+#hc{position:relative;padding-bottom:30px}
+#sites{position:absolute;left:0;top:0;width:100%;height:0;overflow:visible;z-index:6;pointer-events:none}
+#sites .tile{position:absolute;left:0;top:0;width:76px;display:flex;flex-direction:column;align-items:center;pointer-events:auto;touch-action:pan-y;transition:transform .22s cubic-bezier(.2,.8,.2,1);-webkit-user-select:none;user-select:none;padding:2px 0}
+#sites .tile.drag{transition:none;z-index:9;touch-action:none}
+#sites .tile.drag .tl{box-shadow:0 18px 30px rgba(15,23,42,.38);transform:scale(1.1)}
+.tl{position:relative;display:block;width:60px;height:60px;border-radius:20px;overflow:hidden;background:#fff;box-shadow:0 8px 18px rgba(34,60,160,.16),0 0 0 1px rgba(15,23,42,.06);transition:transform .15s,box-shadow .15s}
+.tl svg{width:100%;height:100%;display:block}
+#hc[data-shape=round] .tl{border-radius:50%}
+.tl.cu{display:grid;place-items:center;background:linear-gradient(135deg,var(--g1,#6C5CE7),var(--g2,#2F6BFF));color:#fff;font-size:26px;font-weight:800}
+.tl.cu img{position:absolute;inset:0;margin:auto;width:62%;height:62%;object-fit:contain;display:none}
+.tl.cu.fav{background:#fff}.tl.cu.fav img{display:block}.tl.cu.fav .lt{display:none}
+#sites .tn{display:block;margin-top:7px;max-width:76px;font-size:12.5px;font-weight:600;color:#262B38;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#p-home.wp #sites .tn{color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.65)}
+#sites .rm{display:none;position:absolute;top:-4px;right:2px;width:22px;height:22px;border-radius:50%;border:0;background:#ff3b30;color:#fff;font-size:16px;line-height:21px;font-weight:700;padding:0;z-index:3;box-shadow:0 2px 6px rgba(0,0,0,.3)}
+#hc.edit #sites .rm{display:block}
+#hc.edit #sites .tile:not(.drag) .tl{animation:wig .42s ease-in-out infinite alternate}
+.scard{margin-top:16px;border-radius:28px;padding:14px 10px 6px;background:linear-gradient(180deg,#F5F8FF,#FFFFFF 70%);border:1px solid rgba(47,107,255,.10);box-shadow:0 12px 30px rgba(34,60,160,.08)}
+#p-home.wp .scard{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.28);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.sch{display:flex;align-items:center;justify-content:space-between;padding:0 6px 2px}
+.sch b{font-size:16.5px;font-weight:800;letter-spacing:-.2px}
+#p-home.wp .sch b{color:#fff}
+.sacts{display:flex;gap:6px}
+.sacts button{height:32px;min-width:32px;border-radius:16px;border:0;background:#EAF0FF;color:#2F6BFF;font-weight:800;font-size:12.5px;padding:0 12px;display:inline-flex;align-items:center;justify-content:center}
+.sacts button svg{width:18px;height:18px}
+#sc-reset,#sc-done{display:none}
+#hc.edit #sc-reset,#hc.edit #sc-done{display:inline-flex}
+#hc.edit #sc-add{display:none}
+#sc-done{background:#2F6BFF;color:#fff}
+.sarea{min-height:110px}
+.cats{display:flex;gap:8px;overflow-x:auto;margin:14px -18px 0;padding:2px 18px 6px;scrollbar-width:none}
+.cats::-webkit-scrollbar{display:none}
+.cat{flex:none;display:flex;align-items:center;gap:7px;height:40px;padding:0 15px 0 11px;border-radius:20px;border:0;background:var(--c);color:var(--t);font-weight:800;font-size:13.5px;box-shadow:0 4px 12px rgba(34,60,160,.08)}
+.cat i{font-style:normal;font-size:18px;line-height:1}
+.cat:active{transform:scale(.95)}
+#p-home .engs{margin-top:12px}
+#p-home .eng .fv{background:#fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,.12);width:24px;height:24px;display:grid;place-items:center}
+#p-home .eng.sel::after{content:"";width:7px;height:7px;border-radius:50%;background:#138808;margin-left:2px}
+.pvi .tl{width:44px;height:44px;border-radius:14px;box-shadow:none}
+.pvi span.tl{display:block}
+/* ---------- About v2 ---------- */
+.abh2{display:flex;flex-direction:column;align-items:center;padding:6px 0 4px}
+.abh2 .lgx{width:156px;height:156px}
+.abh2 h2{font-size:27px;font-weight:900;letter-spacing:-.7px;margin:12px 0 6px;background:linear-gradient(90deg,#FF9933,#2F6BFF 55%,#138808);-webkit-background-clip:text;background-clip:text;color:transparent}
+.abh2 .vp{padding:4px 14px;border-radius:14px;background:#EAF0FF;color:#2F6BFF;font-weight:800;font-size:13px}
+.abh2 p{max-width:310px;margin:12px auto 0;text-align:center;color:var(--sub);font-size:14.5px;line-height:1.55}
+.pills{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:14px;padding:0 10px}
+.pills span{padding:7px 12px;border-radius:16px;font-size:12.5px;font-weight:700;background:#F2F4FA}
+.feat{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 4px}
+.fti{border-radius:22px;padding:14px;background:var(--surface);border:1px solid var(--line);box-shadow:0 8px 20px rgba(34,60,160,.07)}
+.fti i{font-style:normal;font-size:22px;display:grid;place-items:center;width:44px;height:44px;border-radius:15px;background:var(--c,#EEF3FF);margin-bottom:10px}
+.fti b{display:block;font-size:14px;margin-bottom:2px}.fti small{display:block;color:var(--sub);font-size:12px;line-height:1.35}
+.foot{text-align:center;color:#9AA3B5;font-size:12.5px;padding:24px 0 36px}
+/* ---------- wallpaper behind home + About, everything transparent ---------- */
+#wpl{position:fixed;inset:0;z-index:0;display:none;background-size:cover;background-position:center;background-repeat:no-repeat}
+#wpl::after{content:"";position:absolute;inset:0;background:linear-gradient(rgba(0,0,0,.30),rgba(0,0,0,.05) 40%,rgba(0,0,0,.38))}
+html.wpShow #wpl{display:block}
+html.wpShow #p-home,html.wpShow #p-about{background:transparent}
+#p-home .hbg{display:none!important}
+html.wpShow #bar{background:rgba(255,255,255,.88);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+#p-home.wp .htop .gr b,#p-home.wp .htop .gr small{color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.5)}
+#p-home.wp .hero2 .tag,#p-home.wp .hint{color:rgba(255,255,255,.85)}
+#p-home.wp .engs{background:rgba(255,255,255,.16);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:none}
+#p-home.wp .eng{color:#fff}
+#p-home.wp .eng.sel{background:rgba(255,255,255,.94);color:#14161C}
+#p-home.wp .cat{background:rgba(255,255,255,.18);color:#fff;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:none}
+#p-home.wp .quick button{color:#fff;background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.28);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:none}
+#p-home.wp .sacts button{background:rgba(255,255,255,.2);color:#fff}
+#p-home.wp #sc-done{background:#fff;color:#14161C}
+html.wpShow #p-about{--text:#fff;--sub:rgba(255,255,255,.8);--line:rgba(255,255,255,.28);--surface:rgba(255,255,255,.14);--surface2:rgba(255,255,255,.12);color:#fff}
+html.wpShow #p-about .card2,html.wpShow #p-about .fti{-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:none}
+html.wpShow #p-about .pills span,html.wpShow #p-about .abh2 .vp{background:rgba(255,255,255,.2);color:#fff}
+html.wpShow #p-about .foot{color:rgba(255,255,255,.7)}
+html.wpShow #p-about .fti i{background:rgba(255,255,255,.88)}
+html.wpShow #p-about .ib{color:#fff}
+html.wpShow #p-about .abh2 h2{background:none;-webkit-text-fill-color:#fff;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.45)}
 </style>
 </head>
 <body>
+<div id="wpl"></div>
 <svg width="0" height="0" style="position:absolute"><defs>
 <symbol id="back" viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></symbol>
 <symbol id="fwd" viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></symbol>
@@ -605,24 +685,26 @@ html[data-font=casual],html[data-font=casual] :is(button,input){font-family:casu
 <!-- HOME -->
 <section class="page on" id="p-home">
    <div class="hbg"></div>
-   <div class="htop"><div class="gr"><small>Pravah Browser</small><b id="greet">Welcome</b></div><div class="hbtns"><button class="ib" id="h-wall" aria-label="Wallpaper"><svg class="ic"><use href="#o-wall"/></svg></button><button class="ib" id="h-set" aria-label="Settings"><svg class="ic"><use href="#tune"/></svg></button></div></div>
-   <div class="hmain">
-     <div class="hero2"><div class="lgx"><img class="base" src="logo.png" alt=""><canvas id="homeGlobe" width="240" height="240"></canvas><img class="ov" src="rings.png" alt=""></div><div class="tag">Fast &middot; Private &middot; Ad-free</div></div>
+   <div class="htop"><div class="gr"><small id="gdate">Pravah Browser</small><b id="greet">Welcome</b></div><div class="hbtns"><button class="ib" id="h-wall" aria-label="Wallpaper"><svg class="ic"><use href="#o-wall"/></svg></button><button class="ib" id="h-set" aria-label="Settings"><svg class="ic"><use href="#tune"/></svg></button></div></div>
+   <div class="hmain"><div id="hc" data-shape="box">
+     <div class="hero2"><div class="lgx"><img class="base" src="logo.png" alt=""><canvas id="homeGlobe" data-globe="1" width="240" height="240"></canvas><img class="ov" src="rings.png" alt=""></div><div class="tag">Fast &middot; Private &middot; Ad-free</div></div>
      <div class="sbox">
        <svg class="ic"><use href="#search"/></svg>
        <input id="hq" type="text" placeholder="Search or type a URL" enterkeyhint="search" autocomplete="off" autocapitalize="off" spellcheck="false">
        <button class="go" id="hgo" aria-label="Search"><svg class="ic"><use href="#fwd"/></svg></button>
      </div>
      <div class="engs" id="engs"></div>
-     <div class="scw"><div class="sc" id="sites"></div></div>
-     <div class="hint">Touch &amp; hold a shortcut to move it anywhere</div>
+     <div class="cats" id="cats"></div>
+     <div class="scard"><div class="sch"><b>Shortcuts</b><span class="sacts"><button id="sc-shape" aria-label="Icon shape"></button><button id="sc-add">+ Add</button><button id="sc-reset">Reset</button><button id="sc-done" class="dn">Done</button></span></div><div class="sarea" id="sarea"></div></div>
+     <div class="hint">Touch &amp; hold a shortcut, then drag it anywhere on this page</div>
      <div class="quick">
        <button id="q-bm"><svg class="ic"><use href="#o-bm"/></svg>Bookmarks</button>
        <button id="q-hi"><svg class="ic"><use href="#o-clock"/></svg>History</button>
        <button id="q-dl"><svg class="ic"><use href="#o-dl"/></svg>Downloads</button>
        <button id="q-pl"><svg class="ic"><use href="#o-play"/></svg>Playlist</button>
      </div>
-   </div>
+     <div id="sites"></div>
+   </div></div>
  </section>
  <div id="wp-page"></div><div id="wp-prev"></div>
  <div id="addsc"><div class="box"><h3>Add shortcut</h3><input id="as-n" type="text" placeholder="Name (optional)" autocomplete="off"><input id="as-u" type="url" placeholder="Website, e.g. x.com" autocomplete="off" autocapitalize="off" spellcheck="false"><div class="acts"><button id="as-no">Cancel</button><button class="yes" id="as-yes">Add</button></div></div></div>
@@ -747,7 +829,7 @@ $('#q-hi').onclick=()=>N.nav('history','');
 $('#q-dl').onclick=()=>N.nav('downloads','');
 $('#q-pl').onclick=()=>N.nav('playlist','');
 $$('.back').forEach(b=>b.onclick=()=>N.nav('back',''));
-function updateGreet(){const h=new Date().getHours();$('#greet').textContent=h<5?'Good night':h<12?'Good morning':h<17?'Good afternoon':h<21?'Good evening':'Good night'}
+function updateGreet(){try{$('#gdate').textContent=new Date().toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'})}catch(e){}const h=new Date().getHours();$('#greet').textContent=h<5?'Good night':h<12?'Good morning':h<17?'Good afternoon':h<21?'Good evening':'Good night'}
 function updateHome(){updateGreet();if(window.scSync)window.scSync();$$('.eng').forEach(b=>b.classList.toggle('sel',b.dataset.e===S.settings.engine))}
 
 /* ---------- bottom bar ---------- */
@@ -958,13 +1040,13 @@ function sPage(id){
     ${qsec('Layout')}<div class="q">${qr('o-addr','Address bar',{act:'addr',sub:st.addrBar==='bottom'?'Bottom':'Top'})}${qr('o-scroll','Scrolling behavior',{act:'scrollm',sub:st.scrollMode==='hide'?'Hide toolbars when scrolling':'Always show toolbars'})}</div>`;
   case 'ext':return `<div class="q">${qt('adblock','o-ban','Ad blocker','Blocks ads on Google, YouTube and all websites')}${qt('popups','o-puzzle','Pop-up blocker','Stops pages opening new windows by themselves')}${qt('darkPages','o-moon','Night mode','Makes web pages dark')}</div>${qn('These extensions are built into Pravah and work on every page. Browser extension stores are not supported yet.')}`;
   case 'video':return `${qsec('Playback')}<div class="q">${qt('autoplay','o-play','Autoplay videos','Start videos without tapping play')}${qr('o-rot','Fullscreen video',{act:'fsrot',sub:st.fsRotate==='landscape'?'Always landscape':'Rotate with phone'})}</div>
-    ${qsec('Video controls')}<div class="q">${qr('o-headset','Listen In Background',{go:'vbg'})}${qr('o-vtool','Show Video Toolbar',{go:'vtool'})}${qr('o-vmenu','Show Video Menu',{go:'vmenu'})}</div>${qn('Control how videos behave on websites. Customize playback options for a better experience.')}
+    ${qsec('Video controls')}<div class="q">${qr('o-headset','Listen In Background',{go:'vbg'})}${qr('o-vtool','Download button & toolbar',{go:'vtool',sub:getB('vidDl')?'On':'Off'})}${qr('o-vmenu','Show Video Menu',{go:'vmenu'})}</div>${qn('Control how videos behave on websites. Customize playback options for a better experience.')}
     ${qsec('YouTube')}<div class="q">${qr('o-sliders','YouTube Option',{go:'yt'})}</div>`;
   case 'vbg':return `${qsec('Listen in background on all sites')}<div class="q">${qt('bgPlay','','Listen In Background')}</div>${info('o-headset','Listen In Background','Allow videos to continue playing when switching tabs, minimizing the browser, or when the screen is off.')}`;
-  case 'vtool':return `${qsec('Show video toolbar on all sites')}<div class="q">${qt('vidToolbar','','Show Video Toolbar')}</div><div class="q qi"><div class="mock"><div class="mv"></div><div class="mpill">${ico('o-dl')}${ico('o-zoom')}${ico('o-list')}</div></div><p>Display a floating toolbar while videos are playing for easier control: download, fullscreen and playback speed.</p></div>`;
+  case 'vtool':return `${qsec('Download button on videos')}<div class="q">${qt('vidDl','','Show download button & toolbar')}</div><div class="q qi"><div class="mock"><div class="mv"></div><div class="mpill">${ico('o-dl')}${ico('o-zoom')}${ico('o-list')}</div></div><p>It is OFF by default. Turn it ON to show a floating toolbar on playing videos: download, fullscreen and playback speed. Works with normal videos and streaming (HLS) videos.</p></div>`;
   case 'vmenu':return `${qsec('Show video menu on all sites')}<div class="q">${qt('vidMenu','','Show Video Menu')}</div><div class="q qi"><div class="mock"><div class="mmenu"><small>VIDEO</small><div>Add to Playlist<span>＋</span></div><div>Add &amp; Download<span>⬇</span></div></div></div><p>Show quick actions when long-pressing on a video.</p></div>`;
   case 'yt':return `${qsec('YouTube option')}<div class="q">${qt('ytRecs','','Remove YouTube recommendations','Removes the up next and end card elements on youtube.com')}${qt('ytShorts','','Remove YouTube Shorts','Removes Shorts from the homepage, trending page and search results on youtube.com')}</div>`;
-  case 'dls':return `<div class="q">${qt('askDl','','Ask Before Downloading')}</div>
+  case 'dls':return `<div class="q">${qt('askDl','','Ask Before Downloading')}${qt('vidDl','o-dl','Download button on videos','Show a download button on playing videos (off by default)')}</div>
     ${qsec('Download location')}<div class="q">${radio('dlDest','public','Public Storage','/storage/emulated/0/Download',st.dlDest||'public')}${radio('dlDest','pravah','Pravah Folder','Download/Pravah',st.dlDest)}${radio('dlDest','external','External Downloader','Pick a downloader app each time',st.dlDest)}</div>
     <div class="q" style="margin-top:14px">${qr('o-dl','Open Downloads',{act:'dlopen',chev:1})}</div>`;
   case 'acc':{const z=Number(st.textZoom||100);return `<div class="q"><div class="qs"><div class="qsh"><span>Text size</span><b id="tzv">${z}%</b></div><input type="range" class="rg" id="tz" min="70" max="200" step="10" value="${z}"><div class="tzp" id="tzp" style="font-size:${(z/100*15).toFixed(1)}px">The quick brown fox jumps over the lazy dog.</div></div></div>
@@ -1131,20 +1213,34 @@ function applyLook(){
   const h=$('#p-home'),w=S.settings.wall||'none';let bg='';
   if(w==='custom'&&wallData)bg=`linear-gradient(rgba(0,0,0,.24),rgba(0,0,0,.24)),url(${wallData})`;
   else if(window.wallCss)bg=window.wallCss(w);
-  h.classList.toggle('wp',!!bg);h.style.backgroundImage=bg;
+  h.classList.toggle('wp',!!bg);h.style.backgroundImage='';
+  $('#wpl').style.backgroundImage=bg;
+  const de=document.documentElement;
+  de.classList.toggle('wpOn',!!bg);
+  de.classList.toggle('wpShow',!!bg&&(S.mode==='home'||S.mode==='about'));
+  if(window.syncBars)window.syncBars();
 }
 
 /* ---------- about ---------- */
 function renderAbout(){
   const a=S.about||{},kv=(k,v)=>`<div class="kv"><span>${k}</span><span>${esc(v)}</span></div>`;
+  const F=[['🛡️','Ad & tracker blocking','Cleaner, faster pages','#E8F7EE'],['🚫','Pop-up shield','No surprise ad pages','#FFEDEA'],['🕶️','Private tabs','Nothing is saved','#EEF0FF'],['🌙','Night & dark mode','Easy on your eyes','#EDEBFF'],['📖','Reader mode','Distraction-free reading','#FFF4E0'],['🔎','Find on page','Jump to any word','#E6F4FF'],['🧩','Free shortcuts','Place them anywhere','#FDE9F3'],['🖼️','Wallpapers','Tech, Nature, Modern','#E5F7F6'],['⬇️','Downloads','Built-in manager','#EAF1FF'],['⭐','Bookmarks & history','Always on your device','#FFF8DB']];
   $('#alist').innerHTML=`
-  <div class="abh"><div class="mark"><img src="logo.png" alt=""></div><h2>Pravah Browser</h2><div class="v">Version ${esc(a.version||'1.3')}</div><p>A fast, private browser with built-in ad blocking.</p></div>
+  <div class="abh2"><div class="lgx"><img class="base" src="logo.png" alt=""><canvas data-globe="1" width="240" height="240"></canvas><img class="ov" src="rings.png" alt=""></div>
+    <h2>Pravah Browser</h2><div class="vp">Version ${esc(a.version||'1.6')}</div>
+    <p>A fast, private browser with built-in ad blocking &mdash; made in India, for India.</p>
+    <div class="pills"><span>🛡️ Ad-block ${getB('adblock')?'ON':'OFF'}</span><span>🚫 Pop-ups ${getB('popups')?'blocked':'allowed'}</span><span>🇮🇳 Made in India</span></div></div>
+  <div class="sec">Highlights</div>
+  <div class="feat">${F.map(f=>`<div class="fti"><i style="--c:${f[3]}">${f[0]}</i><b>${f[1]}</b><small>${f[2]}</small></div>`).join('')}</div>
   <div class="sec">Browser</div>
-  <div class="card2">${kv('Version',a.version||'1.3')}${kv('Engine','Chromium '+(a.engine||''))}${kv('Android',a.android||'')}${kv('Package','com.pravah.browser')}</div>
+  <div class="card2">${kv('Version',a.version||'1.6')}${kv('Engine','Chromium '+(a.engine||''))}${kv('Android',a.android||'')}${kv('Package','com.pravah.browser')}</div>
   <div class="sec">Protection</div>
-  <div class="card2">${kv('Ad &amp; tracker blocking',getB('adblock')?'On':'Off')}${kv('Pop-up blocking',getB('popups')?'On':'Off')}<div class="kv txt">Your history, bookmarks and downloads are stored only on this device.</div></div>
+  <div class="card2">${kv('Ad &amp; tracker blocking',getB('adblock')?'On':'Off')}${kv('Pop-up blocking',getB('popups')?'On':'Off')}<div class="kv txt">Ads, trackers and sneaky redirects are stopped before they load, so pages open faster and use less data.</div></div>
+  <div class="sec">Your privacy</div>
+  <div class="card2"><div class="kv txt">Your history, bookmarks and downloads are stored only on this device. Pravah does not sell or share your browsing data.</div></div>
   <div class="sec">Developer</div>
-  <div class="card2">${kv('Created by','Anil Yadav')}</div>`;
+  <div class="card2">${kv('Created by','Anil Yadav')}${kv('Made with','Love in India 🇮🇳')}</div>
+  <div class="foot">Pravah Browser &middot; Fast &middot; Private &middot; Ad-free</div>`;
 }
 $('#ab-back').onclick=()=>N.nav('settings','');
 

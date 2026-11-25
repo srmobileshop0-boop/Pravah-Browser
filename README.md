@@ -50,3 +50,16 @@ Fast, private, ad-free Android browser. Created by Anil Yadav.
 - No bottom bar on web pages (only on the start page and tabs); address bar now has tab count and menu (three dots), a Stop button shows while loading
 - App icon: white background with the logo in the centre (like the Jio app)
 - Start page: tricolor line around the logo border, polished search box, segmented search-engine switch, Shortcuts section
+
+## v1.7
+- Start page redesigned: date + greeting, rotating-globe logo with tricolor border line, engine switch, quick-topic chips (News, Cricket, Movies, Weather, Recharge, Maps, Shopping, Music), Shortcuts card
+- Shortcuts can be placed ANYWHERE on the start page (touch & hold, drag up/down/left/right; page auto-scrolls); Reset puts them back in a grid
+- Crisp brand icons for Google, YouTube, X, Facebook, Instagram, Telegram, Flipkart, Amazon; any site you add gets a coloured letter / favicon icon
+- Round or box icon shape (button in the Shortcuts header)
+- About page: rotating-globe logo, gradient title, Highlights grid, Browser / Protection / Privacy / Developer cards
+
+## v1.8
+- Wallpaper now shows behind the whole start page and About page (cards are transparent glass); status/navigation bars take the wallpaper colour
+- Stronger ad blocking for video sites: more ad / cam-widget networks, "Ad"/"Sponsored" labelled blocks and native ad strips are hidden
+- Video download button + toolbar is OFF by default (Settings > Video Options > Download button & toolbar, or Download Settings)
+- Downloads fixed: sends Referer / cookies / user-agent, finds the real video behind blob: players, downloads HLS (.m3u8) streams (AES-128 too) and saves them as MP4 in Downloads/Pravah, shows them in the Downloads list

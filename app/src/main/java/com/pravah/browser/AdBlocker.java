@@ -44,6 +44,19 @@ final class AdBlocker {
             "adnetworkperformance.com", "go.oclasrv.com", "ad.gt", "adsrvmedia.net", "mc.yandex.ru", "adriver.ru",
             "app.link.ads", "inmobi.net", "applvn.com", "adjust.com.ads", "fyber.com", "vrtcal.com", "verve.com", "pubnative.net",
             "liftoff.io", "moloco.com", "digitalturbine.com", "ogury.com", "adgear.com", "adgrx.com", "adscale.de",
+            // Ad networks / affiliate widgets that video-streaming sites rely on
+            "exoclick.com", "exosrv.com", "magsrv.com", "pemsrv.com", "trafficjunky.net", "trafficjunky.com", "trafficfactory.biz",
+            "juicyads.com", "ero-advertising.com", "clickadilla.com", "rtbsuccess.com", "adxpansion.com", "plugrush.com",
+            "popcash.net", "popads.net", "popunder.net", "propellerads.com", "propu.sh", "onclickads.net", "hilltopads.net",
+            "stripchat.com", "stripcdn.com", "strpst.com", "strpjmp.com", "xhamsterlive.com", "xlivrdr.com", "xlivecdn.com",
+            "chaturbate.com", "bongacams.com", "bongacash.com", "cam4.com", "livejasmin.com", "awempire.com", "awltovhc.com",
+            "naughtyads.com", "adsco.re", "adsession.com", "bidswitch.net", "contextweb.com", "lijit.com", "yieldmo.com",
+            "teads.tv", "sharethrough.com", "nativo.com", "adform.net", "adition.com", "criteo.com", "criteo.net",
+            "doubleclick.net", "googlesyndication.com", "googleadservices.com", "adservice.google.com", "2mdn.net",
+            "moatads.com", "scorecardresearch.com", "quantserve.com", "amazon-adsystem.com", "adsrvr.org", "rubiconproject.com",
+            "pubmatic.com", "openx.net", "casalemedia.com", "appnexus.com", "advertising.com", "taboola.com", "outbrain.com",
+            "mgid.com", "revcontent.com", "zemanta.com", "adnxs.com", "lkqd.net", "springserve.com", "videoamp.com",
+            "mc.yandex.ru", "an.yandex.ru", "adfox.ru", "begun.ru", "ads.pubmatic.com", "tpmn.co.kr", "inmobi.com",
             // Tracking
             "google-analytics.com", "hotjar.com", "mouseflow.com", "crazyegg.com", "branch.io", "app-measurement.com"
     ));
@@ -117,6 +130,10 @@ final class AdBlocker {
                 || u.contains("/showads") || u.contains("/popunder") || u.contains("/pop-under")
                 || u.contains("/ads/banner") || u.contains("/adframe") || u.contains("/ad-iframe")
                 || u.contains("/prebid") || u.contains("/ads.js") || u.contains("/adsbox")
-                || u.contains("/vast.xml") || u.contains("/vmap.xml") || u.contains("ad_banner");
+                || u.contains("/vast.xml") || u.contains("/vmap.xml") || u.contains("ad_banner")
+                || u.contains("/nativeads") || u.contains("/native-ads") || u.contains("/native_ads") || u.contains("/ad-server")
+                || u.contains("/adserver") || u.contains("/banners/") || u.contains("/ads/js") || u.contains("/ads_js")
+                || u.contains("popunder") || u.contains("pop-under") || u.contains("/click.php?") || u.contains("/aff_c?")
+                || u.contains("preroll") && (u.contains(".xml") || u.contains("vast"));
     }
 }

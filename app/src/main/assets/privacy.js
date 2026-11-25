@@ -123,8 +123,8 @@
         var a = s.getAttribute('data-a');
         if (a === 'dl') {
           var u = srcOf(cur);
-          if (u && !/\.(m3u8|mpd)(\?|$)/i.test(u)) { act('download', { u: u }); toast('Download started'); }
-          else toast("This video can't be downloaded");
+          act('download', { u: u });
+          toast(u && !/\.(m3u8|mpd)(\?|$)/i.test(u) ? 'Download started' : 'Getting the video...');
         } else if (a === 'fs') {
           try { (cur.requestFullscreen || cur.webkitRequestFullscreen || cur.webkitEnterFullscreen).call(cur); } catch (er) {}
         } else {
@@ -176,8 +176,8 @@
           e.preventDefault(); e.stopPropagation();
           var v2 = menu.__v, u = v2 ? srcOf(v2) : '', dl = s.getAttribute('data-a') === 'pd';
           hideMenu();
-          if (dl && !u) toast("Added. This video can't be downloaded");
-          act('playlist', { u: location.href, t: document.title || location.hostname, v: u, dl: dl && u ? '1' : '0' });
+          if (dl && !u) toast('Getting the video...');
+          act('playlist', { u: location.href, t: document.title || location.hostname, v: u, dl: dl ? '1' : '0' });
         }, true);
         document.documentElement.appendChild(menu);
       }

@@ -109,6 +109,7 @@ public class MainActivity extends Activity {
         int progress;
         String thumb;
         ScriptHandler script;
+        final ArrayList<String> media = new ArrayList<>();
     }
 
     SharedPreferences sp;
@@ -126,6 +127,7 @@ public class MainActivity extends Activity {
     String adJs = "", darkJs = "", pageScript = "", baseUa = "", chromeVer = "120.0.0.0";
     boolean introActive = true;
     JSONArray dls = new JSONArray();
+    final java.util.HashSet<Long> hlsActive = new java.util.HashSet<>();
     Runnable dlPoll;
     View customView;
     WebChromeClient.CustomViewCallback customCb;
@@ -135,16 +137,18 @@ public class MainActivity extends Activity {
     int settingsDepth = 0;
     volatile boolean uiOverlay = false;
     boolean manualFs = false;
+    boolean barOn = false, barTopLight = false, barBotLight = false;
+    int barTop = 0, barBot = 0;
     String lastLoadUrl = "";
     long lastLoadAt = 0;
     boolean toolbarsHidden = false, unlocked = false, authBusy = false;
     long toolbarToggleAt = 0, bgAt = 0;
     static final String[][] SETTING_DEFAULTS = {
             {"addrBar", "top"}, {"scrollMode", "always"}, {"barBtn", "home"}, {"swipeFs", "true"}, {"swipeTabs", "true"}, {"fullUrl", "false"},
-            {"homeUrl", ""}, {"mReader", "true"}, {"mZoom", "true"}, {"mFind", "true"}, {"mDesktop", "true"}, {"mA2hs", "true"}, {"mDev", "false"}, {"uiFont", "default"}, {"wall", "none"},
+            {"homeUrl", ""}, {"scShape", "box"}, {"mReader", "true"}, {"mZoom", "true"}, {"mFind", "true"}, {"mDesktop", "true"}, {"mA2hs", "true"}, {"mDev", "false"}, {"uiFont", "default"}, {"wall", "none"},
             {"textZoom", "100"}, {"autoplay", "true"}, {"block3p", "false"}, {"askDl", "false"},
             {"lock", "false"}, {"forceZoom", "false"}, {"fsRotate", "auto"},
-            {"bgPlay", "true"}, {"vidToolbar", "true"}, {"vidMenu", "true"}, {"ytRecs", "false"}, {"ytShorts", "false"},
+            {"bgPlay", "true"}, {"vidToolbar", "true"}, {"vidDl", "false"}, {"vidMenu", "true"}, {"ytRecs", "false"}, {"ytShorts", "false"},
             {"httpsOnly", "false"}, {"fpProtect", "false"}, {"jsOn", "true"}, {"cookiesOn", "true"}, {"stopRedirect", "true"},
             {"permLoc", "ask"}, {"permCam", "ask"}, {"permMic", "ask"}, {"safeBrowse", "true"}, {"dnt", "true"},
             {"deamp", "true"}, {"gpc", "true"}, {"webrtc", "default"}, {"lockPriv", "false"}, {"lockHist", "false"},
@@ -597,7 +601,7 @@ public class MainActivity extends Activity {
                     .append(",deamp:").append(flag("deamp", true))
                     .append(",rtc:").append(setting("webrtc", "default").equals("off"))
                     .append(",bg:").append(flag("bgPlay", true))
-                    .append(",vtool:").append(flag("vidToolbar", true))
+                    .append(",vtool:").append(flag("vidDl", false))
                     .append(",vmenu:").append(flag("vidMenu", true))
                     .append(",ytr:").append(flag("ytRecs", false))
                     .append(",yts:").append(flag("ytShorts", false))
@@ -622,6 +626,18 @@ public class MainActivity extends Activity {
         getWindow().getDecorView().setSystemUiVisibility(flags);
         if (root != null) root.setBackgroundColor(bg);
         if (topReady) top.evaluateJavascript("Top.setTheme('" + t[0] + "')", null);
+        applyBarColors();
+    }
+
+    /** On the start page and About the status / navigation bars take the wallpaper colour. */
+    void applyBarColors() {
+        if (introActive || !barOn || !(mode.equals("home") || mode.equals("about"))) return;
+        getWindow().setStatusBarColor(barTop);
+        getWindow().setNavigationBarColor(barBot);
+        int flags = 0;
+        if (!barTopLight) flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+        if (!barBotLight && Build.VERSION.SDK_INT >= 26) flags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+        getWindow().getDecorView().setSystemUiVisibility(flags);
     }
 
     // ------------------------------------------------------------------ data
@@ -1212,7 +1228,7 @@ public class MainActivity extends Activity {
         w.setDownloadListener(new DownloadListener() {
             @Override
             public void onDownloadStart(String url, String ua, String cd, String mime, long len) {
-                download(url, ua, cd, mime);
+                download(url, ua, cd, mime, t.url);
             }
         });
         w.setOnLongClickListener(new View.OnLongClickListener() {
@@ -1281,22 +1297,30 @@ public class MainActivity extends Activity {
         return (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
     }
 
-    void download(final String url, final String ua, final String cd, final String mime) {
+    void download(String url, String ua, String cd, String mime) {
+        download(url, ua, cd, mime, cur != null ? cur.url : null);
+    }
+
+    void download(final String url, final String ua, final String cd, final String mime, final String referer) {
         if (flag("askDl", false) && url != null && (url.startsWith("http://") || url.startsWith("https://"))) {
             String fn = URLUtil.guessFileName(url, cd, mime);
             new AlertDialog.Builder(this).setTitle("Download file?").setMessage(fn)
                     .setPositiveButton("Download", new android.content.DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(android.content.DialogInterface d, int w) {
-                            startDownload(url, ua, cd, mime);
+                            startDownload(url, ua, cd, mime, referer);
                         }
                     }).setNegativeButton("Cancel", null).show();
             return;
         }
-        startDownload(url, ua, cd, mime);
+        startDownload(url, ua, cd, mime, referer);
     }
 
     void startDownload(String url, String ua, String cd, String mime) {
+        startDownload(url, ua, cd, mime, cur != null ? cur.url : null);
+    }
+
+    void startDownload(String url, String ua, String cd, String mime, String referer) {
         if (url == null || !(url.startsWith("http://") || url.startsWith("https://"))) {
             toast("This file can't be downloaded");
             return;
@@ -1320,7 +1344,9 @@ public class MainActivity extends Activity {
             String ck = CookieManager.getInstance().getCookie(url);
             if (ck != null) r.addRequestHeader("cookie", ck);
             if (ua != null) r.addRequestHeader("User-Agent", ua);
-            String fn = URLUtil.guessFileName(url, cd, mime);
+            if (referer != null && referer.startsWith("http")) r.addRequestHeader("Referer", referer);
+            r.addRequestHeader("Accept", "*/*");
+            String fn = fixName(URLUtil.guessFileName(url, cd, mime), mime);
             r.setTitle(fn);
             r.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
             r.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, setting("dlDest", "public").equals("pravah") ? "Pravah/" + fn : fn);
@@ -1342,6 +1368,195 @@ public class MainActivity extends Activity {
         }
     }
 
+    static String fixName(String fn, String mime) {
+        if (fn == null || fn.isEmpty()) fn = "download";
+        fn = fn.replaceAll("[\\\\/:*?\"<>|]", "_");
+        String low = fn.toLowerCase(java.util.Locale.ROOT);
+        boolean video = mime != null && mime.startsWith("video/");
+        if (video && (low.endsWith(".bin") || !low.matches(".*\\.[a-z0-9]{2,4}$"))) {
+            if (low.endsWith(".bin")) fn = fn.substring(0, fn.length() - 4);
+            fn = fn + ".mp4";
+        }
+        return fn;
+    }
+
+    /** Download request coming from a video on the page: direct file, HLS stream, or whatever the page loaded. */
+    void smartDownload(final String v, final Tab t) {
+        final String page = t != null && t.url != null ? t.url : "";
+        final String low = v == null ? "" : v.toLowerCase(java.util.Locale.ROOT);
+        if (low.startsWith("http") && !low.contains(".m3u8") && !low.contains(".mpd")) {
+            startDownload(v, userAgent(false), null, null, page);
+            return;
+        }
+        if (low.startsWith("http") && low.contains(".m3u8")) {
+            startHls(v, page);
+            return;
+        }
+        final ArrayList<String> found = new ArrayList<>();
+        if (t != null) {
+            synchronized (t.media) {
+                found.addAll(t.media);
+            }
+        }
+        if (found.isEmpty()) {
+            toast("No video found yet. Press play first, then try again.");
+            return;
+        }
+        toast("Getting the video...");
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                final HlsDownloader probe = new HlsDownloader(MainActivity.this, baseUa, page);
+                String hlsMaster = null, hlsAny = null, bestFile = null, lastFile = null;
+                long bestLen = 0;
+                int checked = 0;
+                for (int i = found.size() - 1; i >= 0; i--) {
+                    String u = found.get(i);
+                    if (u.toLowerCase(java.util.Locale.ROOT).contains(".m3u8")) {
+                        if (hlsAny == null) hlsAny = u;
+                        if (hlsMaster == null && checked < 6) {
+                            checked++;
+                            if (probe.isMaster(u)) hlsMaster = u;
+                        }
+                    } else {
+                        if (lastFile == null) lastFile = u;
+                        if (i >= found.size() - 8) {
+                            long len = probe.contentLength(u);
+                            if (len > bestLen) {
+                                bestLen = len;
+                                bestFile = u;
+                            }
+                        }
+                    }
+                }
+                final String hls = hlsMaster != null ? hlsMaster : hlsAny;
+                final String file = bestLen >= 1500000 ? bestFile : null;
+                final String fallback = lastFile;
+                main.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (file != null) startDownload(file, userAgent(false), null, "video/mp4", page);
+                        else if (hls != null) startHls(hls, page);
+                        else if (fallback != null) startDownload(fallback, userAgent(false), null, "video/mp4", page);
+                        else toast("This video can't be downloaded");
+                    }
+                });
+            }
+        }).start();
+    }
+
+    void startHls(final String playlistUrl, final String referer) {
+        final long id = -System.currentTimeMillis();
+        try {
+            JSONObject o = new JSONObject();
+            o.put("id", id);
+            o.put("name", "Pravah video.mp4");
+            o.put("url", playlistUrl);
+            o.put("ref", referer == null ? "" : referer);
+            o.put("t", System.currentTimeMillis());
+            o.put("local", true);
+            o.put("status", "running");
+            o.put("done", 0L);
+            o.put("total", 0L);
+            JSONArray n = new JSONArray();
+            n.put(o);
+            for (int i = 0; i < Math.min(dls.length(), 199); i++) n.put(dls.get(i));
+            dls = n;
+            saveSoon();
+        } catch (Exception e) {
+            toast("Download failed");
+            return;
+        }
+        hlsActive.add(id);
+        toast("Video download started");
+        if (mode.equals("downloads")) pushDownloads();
+        final HlsDownloader job = new HlsDownloader(this, baseUa, referer);
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                job.run(playlistUrl, new HlsDownloader.Listener() {
+                    @Override
+                    public void progress(long done, long total) {
+                        updLocal(id, "running", done, total, null, null, null);
+                    }
+
+                    @Override
+                    public void done(String name, String uri, long size) {
+                        updLocal(id, "done", size, size, name, uri, "Saved in Downloads/Pravah");
+                    }
+
+                    @Override
+                    public void fail(String why) {
+                        updLocal(id, "failed", 0, 0, null, null, "Download failed: " + why);
+                    }
+                });
+            }
+        }).start();
+    }
+
+    void updLocal(final long id, final String status, final long done, final long total, final String name, final String uri, final String say) {
+        main.post(new Runnable() {
+            @Override
+            public void run() {
+                for (int i = 0; i < dls.length(); i++) {
+                    JSONObject o = dls.optJSONObject(i);
+                    if (o != null && o.optLong("id") == id) {
+                        try {
+                            o.put("status", status);
+                            o.put("done", done);
+                            o.put("total", total);
+                            if (name != null) o.put("name", name);
+                            if (uri != null) o.put("uri", uri);
+                        } catch (Exception ignored) {
+                        }
+                        break;
+                    }
+                }
+                if (!status.equals("running")) {
+                    hlsActive.remove(id);
+                    saveSoon();
+                    if (say != null) toast(say);
+                    if (mode.equals("downloads")) pushDownloads();
+                }
+            }
+        });
+    }
+
+    JSONObject localRec(long id) {
+        for (int i = 0; i < dls.length(); i++) {
+            JSONObject o = dls.optJSONObject(i);
+            if (o != null && o.optBoolean("local") && o.optLong("id") == id) return o;
+        }
+        return null;
+    }
+
+    void openLocal(JSONObject r, boolean share) {
+        String us = r.optString("uri");
+        if (us.isEmpty()) {
+            toast("File not found");
+            return;
+        }
+        Uri u = Uri.parse(us);
+        String nm = r.optString("name").toLowerCase(java.util.Locale.ROOT);
+        String mime = nm.endsWith(".ts") ? "video/mp2t" : "video/mp4";
+        try {
+            if (share) {
+                Intent i = new Intent(Intent.ACTION_SEND);
+                i.setType(mime);
+                i.putExtra(Intent.EXTRA_STREAM, u);
+                i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                startActivity(Intent.createChooser(i, "Share"));
+            } else {
+                Intent i = new Intent(Intent.ACTION_VIEW);
+                i.setDataAndType(u, mime);
+                i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(i);
+            }
+        } catch (Exception e) {
+            toast("No app found to open this file");
+        }
+    }
+
     void pushDownloads() {
         if (!uiReady) return;
         DownloadManager d = dm();
@@ -1352,6 +1567,29 @@ public class MainActivity extends Activity {
         for (int i = 0; i < dls.length(); i++) {
             JSONObject r = dls.optJSONObject(i);
             if (r == null) continue;
+            if (r.optBoolean("local")) {
+                try {
+                    long lid = r.optLong("id");
+                    String ls = r.optString("status", "running");
+                    if (ls.equals("running") && !hlsActive.contains(lid)) {
+                        ls = "failed";
+                        r.put("status", "failed");
+                        changed = true;
+                    }
+                    JSONObject lo = new JSONObject();
+                    lo.put("id", String.valueOf(lid));
+                    lo.put("name", r.optString("name"));
+                    lo.put("url", r.optString("url"));
+                    lo.put("t", r.optLong("t"));
+                    lo.put("status", ls);
+                    lo.put("total", r.optLong("total"));
+                    lo.put("done", r.optLong("done"));
+                    out.put(lo);
+                } catch (Exception ignored) {
+                }
+                keep.put(r);
+                continue;
+            }
             Cursor c = null;
             try {
                 c = d.query(new DownloadManager.Query().setFilterById(r.optLong("id")));
@@ -1416,6 +1654,11 @@ public class MainActivity extends Activity {
     }
 
     void openDownload(long id, boolean share) {
+        JSONObject lr = localRec(id);
+        if (lr != null) {
+            openLocal(lr, share);
+            return;
+        }
         DownloadManager d = dm();
         Uri u = d == null ? null : d.getUriForDownloadedFile(id);
         if (u == null) {
@@ -1443,6 +1686,18 @@ public class MainActivity extends Activity {
     }
 
     void removeDownload(long id, boolean deleteFile) {
+        JSONObject lrec = localRec(id);
+        if (lrec != null && deleteFile) {
+            try {
+                String us = lrec.optString("uri");
+                if (!us.isEmpty()) {
+                    Uri lu = Uri.parse(us);
+                    if ("file".equals(lu.getScheme())) new java.io.File(lu.getPath()).delete();
+                    else getContentResolver().delete(lu, null, null);
+                }
+            } catch (Exception ignored) {
+            }
+        }
         if (deleteFile) {
             DownloadManager d = dm();
             if (d != null) d.remove(id);
@@ -1464,8 +1719,12 @@ public class MainActivity extends Activity {
             if (o != null && o.optLong("id") == id) url = o.optString("url");
         }
         if (url == null) return;
+        JSONObject lrec = localRec(id);
+        final String ref = lrec != null ? lrec.optString("ref") : null;
+        final boolean local = lrec != null;
         removeDownload(id, true);
-        download(url, baseUa, null, null);
+        if (local) startHls(url, ref);
+        else download(url, baseUa, null, null);
     }
 
     void clearFinishedDownloads() {
@@ -1475,6 +1734,7 @@ public class MainActivity extends Activity {
             JSONObject o = dls.optJSONObject(i);
             if (o == null) continue;
             boolean active = false;
+            if (o.optBoolean("local") && o.optString("status").equals("running") && hlsActive.contains(o.optLong("id"))) active = true;
             Cursor c = null;
             try {
                 c = d == null ? null : d.query(new DownloadManager.Query().setFilterById(o.optLong("id")));
@@ -1539,11 +1799,11 @@ public class MainActivity extends Activity {
         String a = u.getHost() == null ? "" : u.getHost();
         if (a.equals("download")) {
             String v = u.getQueryParameter("u");
-            if (v != null) download(v, userAgent(false), null, null);
+            smartDownload(v == null ? "" : v, cur);
         } else if (a.equals("playlist")) {
             String v = u.getQueryParameter("v");
             addPlaylist(u.getQueryParameter("u"), u.getQueryParameter("t"));
-            if ("1".equals(u.getQueryParameter("dl")) && v != null && !v.isEmpty()) download(v, userAgent(false), null, null);
+            if ("1".equals(u.getQueryParameter("dl"))) smartDownload(v == null ? "" : v, cur);
         } else if (a.equals("search")) {
             String q = u.getQueryParameter("q");
             if (q != null && !q.isEmpty()) {
@@ -1718,6 +1978,23 @@ public class MainActivity extends Activity {
 
         @Override
         public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest req) {
+            try {
+                if (!req.isForMainFrame()) {
+                    String su = req.getUrl().toString();
+                    String sl = su.toLowerCase(java.util.Locale.ROOT);
+                    int qm = sl.indexOf('?');
+                    String path = qm > 0 ? sl.substring(0, qm) : sl;
+                    if (path.endsWith(".m3u8") || path.endsWith(".mp4") || path.endsWith(".webm") || path.endsWith(".m4v")
+                            || path.endsWith(".mov") || path.endsWith(".mkv") || path.endsWith(".flv") || path.endsWith(".3gp")) {
+                        synchronized (t.media) {
+                            t.media.remove(su);
+                            t.media.add(su);
+                            while (t.media.size() > 30) t.media.remove(0);
+                        }
+                    }
+                }
+            } catch (Exception ignored) {
+            }
             if (req.isForMainFrame() && flag("adblock", true)) {
                 Uri mu = req.getUrl();
                 if (AdBlocker.isAdClick(mu.toString(), mu.getHost()) || AdBlocker.isAdHost(mu.getHost())) {
@@ -1759,6 +2036,9 @@ public class MainActivity extends Activity {
 
         @Override
         public void onPageStarted(WebView view, String url, Bitmap favicon) {
+            synchronized (t.media) {
+                t.media.clear();
+            }
             t.url = url;
             t.loading = true;
             t.progress = 5;
@@ -2260,7 +2540,7 @@ public class MainActivity extends Activity {
                         if (v.equals("custom")) pushWallpaper();
                     } else if (k.equals("adblock") || k.equals("darkPages") || k.equals("forceZoom") || k.equals("fpProtect")
                             || k.equals("dnt") || k.equals("gpc") || k.equals("deamp") || k.equals("webrtc") || k.equals("bgPlay")
-                            || k.equals("vidToolbar") || k.equals("vidMenu") || k.equals("ytRecs") || k.equals("ytShorts")
+                            || k.equals("vidToolbar") || k.equals("vidDl") || k.equals("vidMenu") || k.equals("ytRecs") || k.equals("ytShorts")
                             || k.equals("touchSearch")) {
                         rebuildPageScript();
                         for (Tab t : tabs) applyScripts(t);
@@ -2285,6 +2565,31 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public void overlay(boolean on) {
             uiOverlay = on;
+        }
+
+        @JavascriptInterface
+        public void setBars(final String topHex, final String botHex, final boolean topLight, final boolean botLight) {
+            main.post(new Runnable() {
+                @Override
+                public void run() {
+                    boolean was = barOn;
+                    try {
+                        if (topHex == null || topHex.isEmpty() || botHex == null || botHex.isEmpty()) {
+                            barOn = false;
+                        } else {
+                            barTop = Color.parseColor(topHex);
+                            barBot = Color.parseColor(botHex);
+                            barTopLight = topLight;
+                            barBotLight = botLight;
+                            barOn = true;
+                        }
+                    } catch (Exception e) {
+                        barOn = false;
+                    }
+                    if (barOn) applyBarColors();
+                    else if (was) applyTheme();
+                }
+            });
         }
 
         @JavascriptInterface
