@@ -2568,6 +2568,25 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface
+        public String authSalt() {
+            byte[] b = new byte[16];
+            new java.security.SecureRandom().nextBytes(b);
+            return android.util.Base64.encodeToString(b, android.util.Base64.NO_WRAP);
+        }
+
+        @JavascriptInterface
+        public String authHash(String pw, String salt) {
+            try {
+                byte[] sb = android.util.Base64.decode(salt, android.util.Base64.NO_WRAP);
+                javax.crypto.spec.PBEKeySpec spec = new javax.crypto.spec.PBEKeySpec(pw.toCharArray(), sb, 12000, 256);
+                byte[] h = javax.crypto.SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256").generateSecret(spec).getEncoded();
+                return android.util.Base64.encodeToString(h, android.util.Base64.NO_WRAP);
+            } catch (Exception e) {
+                return "";
+            }
+        }
+
+        @JavascriptInterface
         public void setBars(final String topHex, final String botHex, final boolean topLight, final boolean botLight) {
             main.post(new Runnable() {
                 @Override

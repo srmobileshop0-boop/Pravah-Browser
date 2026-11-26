@@ -2,6 +2,14 @@
    Loaded after the main script in ui.html (shares its globals: $, S, N, esc, favUrl, LOGO, host). */
 (function(){
 'use strict';
+/* shared gradients for the Instagram / Telegram icons (must live in a rendered element) */
+(function(){
+  const d=document.createElement('div');
+  d.style.cssText='position:absolute;width:0;height:0;overflow:hidden';
+  d.innerHTML='<svg width="0" height="0"><defs><radialGradient id="igb" cx="30%" cy="107%" r="140%"><stop offset="0" stop-color="#FED576"/><stop offset=".26" stop-color="#F47133"/><stop offset=".61" stop-color="#BC3081"/><stop offset="1" stop-color="#4C63D2"/></radialGradient><linearGradient id="tgb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#37AEE2"/><stop offset="1" stop-color="#1E96C8"/></linearGradient></defs></svg>';
+  document.body.appendChild(d);
+})();
+
 
 /* ================= rotating globe (only the globe moves; rings, background, text stay frozen) ================= */
 const GL={ready:false,loading:false,cbs:[],tex:null,shade:null,Wt:0,Ht:0};
@@ -146,7 +154,20 @@ function modern(o){
   return head(d,b);
 }
 
+function pravah(o){
+  const d=lg('bg',o.bg,.3,1)+'<filter id="bl" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="60"/></filter>';
+  let b=`<rect width="${W_}" height="${H_}" fill="url(#bg)"/>`;
+  o.glows.forEach(g=>{b+=`<circle cx="${g[0]}" cy="${g[1]}" r="${g[2]}" fill="${g[3]}" opacity="${g[4]}" filter="url(#bl)"/>`});
+  b+=`<g fill="none" stroke="#fff" stroke-width="1.3" opacity=".10"><ellipse cx="200" cy="300" rx="330" ry="125" transform="rotate(-22 200 300)"/><ellipse cx="200" cy="300" rx="270" ry="98" transform="rotate(-22 200 300)"/><ellipse cx="200" cy="620" rx="340" ry="130" transform="rotate(18 200 620)"/></g>`;
+  const r=rng(o.seed);for(let i=0;i<46;i++)b+=`<circle cx="${r()*W_}" cy="${r()*H_}" r="${.5+r()*1.1}" fill="#fff" opacity="${.12+r()*.5}"/>`;
+  return head(d,b);
+}
 const WP=[
+ /* Pravah */
+ {id:'p0',c:'Pravah',n:'Pravah',f:()=>pravah({seed:41,bg:['#0A2C96','#0A1F6B','#050D30'],glows:[[30,740,230,'#FF9933',.50],[390,780,250,'#138808',.52],[320,90,210,'#2F6BFF',.55]]})},
+ {id:'p1',c:'Pravah',n:'Sunrise',f:()=>pravah({seed:42,bg:['#2A0E4F','#5A1A5C','#1A0A2E'],glows:[[60,700,260,'#FF9933',.62],[340,120,200,'#E84393',.45],[380,640,200,'#FFC857',.35]]})},
+ {id:'p2',c:'Pravah',n:'Emerald',f:()=>pravah({seed:43,bg:['#04332B','#06503F','#021B17'],glows:[[350,700,260,'#19C37D',.5],[40,140,210,'#2F6BFF',.4],[60,740,200,'#FF9933',.3]]})},
+ {id:'p3',c:'Pravah',n:'Midnight',f:()=>pravah({seed:44,bg:['#12082E','#1F0F5C','#06031A'],glows:[[320,110,230,'#7B5BFF',.55],[40,760,230,'#2F6BFF',.45],[380,520,160,'#E84393',.3]]})},
  /* Tech */
  {id:'t1',c:'Tech',n:'Aurora',f:()=>tech({seed:1,bg:['#14063a','#05010f','#1a0b4d'],glow:[120,260,170,'#d4157a'],rib:[{y:260,a:120,t:60,c:['#ff3fa4','#6a2bff','#0b0a3a'],o:.9,rot:-62},{y:420,a:90,t:40,c:['#2a3cff','#a21cff','#0b0a3a'],o:.7,rot:-62}]})},
  {id:'t2',c:'Tech',n:'Slate',f:()=>tech({seed:2,bg:['#000','#020617','#03203f'],glow:[330,720,230,'#0a6dd6'],rib:[{y:560,a:-60,t:120,c:['#0a2a66','#0aa0ff','#000'],o:.85,rot:-38}]})},
@@ -178,18 +199,20 @@ const WP=[
 const OLD={w1:'linear-gradient(160deg,#0f2027,#2c5364 45%,#3ddc97)',w2:'linear-gradient(160deg,#ff9966,#ff5e62 50%,#7b2ff7)',w3:'linear-gradient(160deg,#00c6ff,#0072ff 55%,#1b1464)',w4:'linear-gradient(160deg,#134e5e,#71b280)',w5:'linear-gradient(160deg,#f6d365,#fda085 45%,#f093fb)',w6:'linear-gradient(160deg,#0f0c29,#302b63 55%,#24243e)'};
 const cache={};
 window.wallCss=function(id){
-  if(!id||id==='none')return '';
+  if(id==='off')return '';
+  if(!id||id==='none')id='p0';
   if(OLD[id])return OLD[id];
   if(cache[id])return cache[id];
   const w=WP.find(x=>x.id===id);if(!w)return '';
   return cache[id]=svgUrl(w.f());
 };
-window.wallLabel=function(id){const w=WP.find(x=>x.id===id);return w?w.n:null};
+window.wallLabel=function(id){if(id==='off')return 'None';if(!id||id==='none')id='p0';const w=WP.find(x=>x.id===id);return w?w.n:null};
 
 /* ================= overlays + back button ================= */
-let ov={picker:false,preview:null,add:false,edit:false};
-function ovSync(){try{N.overlay(!!(ov.picker||ov.preview||ov.add||ov.edit))}catch(e){}}
+let ov={picker:false,preview:null,add:false,edit:false,auth:false};
+function ovSync(){try{N.overlay(!!(ov.picker||ov.preview||ov.add||ov.edit||ov.auth))}catch(e){}}
 window.closeOverlay=function(){
+  if(ov.auth){closeAuth();return}
   if(ov.add){closeAdd();return}
   if(ov.preview){closePreview();return}
   if(ov.picker){closePicker2();return}
@@ -200,8 +223,8 @@ window.closeOverlay=function(){
 /* ================= wallpaper picker ================= */
 const pg=document.getElementById('wp-page'),pv=document.getElementById('wp-prev');
 function renderPicker(){
-  const cur=(S.settings&&S.settings.wall)||'none';
-  const cats=['Tech','Nature','Modern'];
+  const cur0=(S.settings&&S.settings.wall)||'none',cur=cur0==='none'?'p0':cur0;
+  const cats=['Pravah','Tech','Nature','Modern'];
   let h=`<div class="wph"><button class="ib" id="wp-back" aria-label="Back"><svg class="ic"><use href="#back"/></svg></button><h2>Wallpaper</h2></div><div class="wps">`;
   h+=`<div class="wpq"><button class="wpb" id="wp-none">No wallpaper</button><button class="wpb" id="wp-gal">${'My photo / gallery'}</button></div>`;
   cats.forEach(c=>{
@@ -226,7 +249,7 @@ function openPreview(id){
 function closePreview(){ov.preview=null;pv.classList.remove('on');ovSync()}
 pg.onclick=e=>{
   if(e.target.closest('#wp-back'))return closePicker2();
-  if(e.target.closest('#wp-none')){N.setSetting('wall','none');return closePicker2()}
+  if(e.target.closest('#wp-none')){N.setSetting('wall','off');return closePicker2()}
   if(e.target.closest('#wp-gal')){N.pickWallpaper();return}
   const t=e.target.closest('.wpt');if(t)openPreview(t.dataset.w);
 };
@@ -243,8 +266,8 @@ const BR={
  google:'<svg viewBox="0 0 48 48"><rect width="48" height="48" fill="#fff"/><g transform="translate(6 6) scale(.75)"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 8 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.9z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 8 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.200 4.2-4.100 5.600l6.200 5.200C37 39.200 44 34 44 24c0-1.300-.1-2.700-.4-3.900z"/></g></svg>',
  youtube:'<svg viewBox="0 0 48 48"><rect width="48" height="48" fill="#FF0000"/><rect x="8" y="13.5" width="32" height="21" rx="6.5" fill="#fff"/><path d="M20.5 19.5v9l8-4.5z" fill="#FF0000"/></svg>',
  facebook:'<svg viewBox="0 0 48 48"><rect width="48" height="48" fill="#1877F2"/><path fill="#fff" d="M26.5 48V29.5h5.600l.9-6.500h-6.500v-4.200c0-1.900.6-3.200 3.200-3.200h3.400V9.800c-.6-.1-2.600-.3-4.900-.3-4.900 0-8.200 3-8.200 8.400V23H14v6.500h5.900V48z"/></svg>',
- instagram:'<svg viewBox="0 0 48 48"><defs><radialGradient id="igb" cx="30%" cy="107%" r="140%"><stop offset="0" stop-color="#FED576"/><stop offset=".26" stop-color="#F47133"/><stop offset=".61" stop-color="#BC3081"/><stop offset="1" stop-color="#4C63D2"/></radialGradient></defs><rect width="48" height="48" fill="url(#igb)"/><rect x="11.500" y="11.500" width="25" height="25" rx="7.500" fill="none" stroke="#fff" stroke-width="3"/><circle cx="24" cy="24" r="6" fill="none" stroke="#fff" stroke-width="3"/><circle cx="31" cy="17" r="1.900" fill="#fff"/></svg>',
- telegram:'<svg viewBox="0 0 48 48"><defs><linearGradient id="tgb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#37AEE2"/><stop offset="1" stop-color="#1E96C8"/></linearGradient></defs><rect width="48" height="48" fill="url(#tgb)"/><path fill="#fff" d="M36.500 12.500 10 22.800c-1.600.7-1.500 1.600-.3 2l6.700 2.100 2.600 8c.3.900.2 1.200 1.100 1.200.7 0 1-.3 1.400-.7l3.300-3.200 6.800 5c1.300.7 2.100.3 2.400-1.200l4.400-20.800c.5-1.900-.7-2.700-1.900-2.200zM17.700 25.800 31.600 17c.7-.4 1.300-.2.800.3L21 27.700l-.5 5.100z"/></svg>',
+ instagram:'<svg viewBox="0 0 48 48"><rect width="48" height="48" fill="url(#igb)"/><rect x="11.500" y="11.500" width="25" height="25" rx="7.500" fill="none" stroke="#fff" stroke-width="3"/><circle cx="24" cy="24" r="6" fill="none" stroke="#fff" stroke-width="3"/><circle cx="31" cy="17" r="1.900" fill="#fff"/></svg>',
+ telegram:'<svg viewBox="0 0 48 48"><rect width="48" height="48" fill="url(#tgb)"/><path fill="#fff" d="M36.500 12.500 10 22.800c-1.600.7-1.500 1.600-.3 2l6.700 2.100 2.600 8c.3.900.2 1.200 1.100 1.200.7 0 1-.3 1.400-.7l3.300-3.200 6.800 5c1.300.7 2.100.3 2.400-1.200l4.400-20.800c.5-1.900-.7-2.700-1.900-2.200zM17.700 25.800 31.600 17c.7-.4 1.300-.2.800.3L21 27.700l-.5 5.100z"/></svg>',
  x:'<svg viewBox="0 0 48 48"><rect width="48" height="48" fill="#000"/><g transform="translate(10 10) scale(1.2)"><path fill="#fff" d="M18.244 2.250h3.308l-7.227 8.260 8.502 11.240H16.170l-5.214-6.817L4.990 21.750H1.680l7.730-8.835L1.254 2.250H8.080l4.713 6.231zm-1.161 17.520h1.833L7.084 4.126H5.117z"/></g></svg>',
  flipkart:'<svg viewBox="0 0 48 48"><rect width="48" height="48" fill="#2874F0"/><path d="M14 17.500h20l-1.500 20.500a2 2 0 0 1-2 1.800h-13a2 2 0 0 1-2-1.800z" fill="#FFE11B"/><path d="M19 17.500v-2.500a5 5 0 0 1 10 0v2.500" fill="none" stroke="#FFE11B" stroke-width="2.500" stroke-linecap="round"/><path fill="#2874F0" d="M25.600 35.500v-8.200h2.700l.4-3.100h-3.100v-2c0-.9.300-1.500 1.600-1.500h1.700v-2.800c-.3 0-1.300-.1-2.400-.1-2.400 0-4 1.400-4 4.100v2.300h-2.700v3.100h2.700v8.200z"/></svg>',
  amazon:'<svg viewBox="0 0 48 48"><rect width="48" height="48" fill="#232F3E"/><text x="24" y="29" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-weight="800" font-size="27" fill="#fff">a</text><path d="M12 34.500c7 4.600 16.500 4.600 24 0" fill="none" stroke="#FF9900" stroke-width="3" stroke-linecap="round"/><path d="M32.500 31.800l4 2.500-1.200-4.700" fill="none" stroke="#FF9900" stroke-width="2.500" stroke-linecap="round" stroke-linejoin="round"/></svg>'
@@ -408,6 +431,105 @@ const catsEl=document.getElementById('cats');
 catsEl.innerHTML=CATS.map((c,i)=>`<button class="cat" data-i="${i}" style="--c:${c[3]};--t:${c[4]}"><i>${c[0]}</i>${c[1]}</button>`).join('');
 catsEl.onclick=e=>{const b=e.target.closest('.cat');if(!b)return;const c=CATS[+b.dataset.i];if(/^https?:/.test(c[2]))N.open(c[2]);else N.go(c[2],(S.settings&&S.settings.engine)||'google')};
 
+/* ================= toast ================= */
+let toastT=0;
+window.pvToast=function(msg){
+  let t=document.getElementById('pvtoast');
+  if(!t){t=document.createElement('div');t.id='pvtoast';document.body.appendChild(t)}
+  t.textContent=msg;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),2600);
+};
+
+/* ================= mini preview of the start page (tabs screen) ================= */
+window.miniHome=function(){
+  const w=(S.settings&&S.settings.wall)||'none';
+  const bg=w==='custom'&&typeof wallData==='string'&&wallData?`linear-gradient(rgba(0,0,0,.24),rgba(0,0,0,.24)),url(${wallData})`:window.wallCss(w);
+  const sc=(window.SC||[]).slice(0,8);
+  return `<div class="mh${bg?' wp':''}"${bg?` style="background-image:${bg}"`:''}><div class="mh-l"><img src="logo.png" alt=""></div><div class="mh-s"><i></i><span>Search or type a URL</span></div><div class="mh-g">${sc.map(x=>`<span class="mh-i">${scIcon(x)}</span>`).join('')}</div><div class="mh-q"><b></b><b></b><b></b><b></b></div></div>`;
+};
+
+/* ================= account: sign up / log in (stored on this device) ================= */
+const au=document.getElementById('auth');
+let auMode='login',auErr='';
+function accList(){try{const a=JSON.parse((S.settings&&S.settings.accounts)||'[]');return Array.isArray(a)?a:[]}catch(e){return[]}}
+function normId(v){
+  v=(v||'').trim();
+  if(v.indexOf('@')>=0){v=v.toLowerCase();return /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(v)?v:''}
+  let d=v.replace(/[\s\-()]/g,'').replace(/^\+?91/,'');
+  return /^[6-9]\d{9}$/.test(d)?d:'';
+}
+function strength(p){let s=0;if(p.length>=6)s++;if(p.length>=9)s++;if(/[A-Z]/.test(p)&&/[a-z]/.test(p))s++;if(/\d/.test(p)&&/[^A-Za-z0-9]/.test(p)||(/\d/.test(p)&&p.length>=8))s++;return Math.min(4,s)}
+const SVG_USER='<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>';
+const SVG_ID='<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 8l9 6 9-6"/></svg>';
+const SVG_KEY='<svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>';
+function fld(id,label,type,ph,icon){
+  return `<label class="af"><span>${label}</span><div class="ai">${icon}<input id="${id}" type="${type==='password'?'password':type}" placeholder="${ph}" autocomplete="off" autocapitalize="none" spellcheck="false">${type==='password'?`<button type="button" class="eye" data-eye="${id}">Show</button>`:''}</div></label>`;
+}
+function renderAuth(){
+  const m=auMode;
+  const title=m==='signup'?'Create your account':m==='reset'?'Reset password':'Welcome back';
+  const sub=m==='signup'?'Sign up to personalise your browser':m==='reset'?'Confirm your details and choose a new password':'Log in to continue with Pravah';
+  let f='';
+  if(m==='signup')f=fld('au-name','Full name','text','Your name',SVG_USER)+fld('au-id','Mobile number or email','text','10-digit mobile or email',SVG_ID)+fld('au-pw','Password','password','At least 6 characters',SVG_KEY)+'<div class="pwm"><i id="au-st"></i><small id="au-stt"></small></div>'+fld('au-pw2','Confirm password','password','Type the password again',SVG_KEY);
+  else if(m==='reset')f=fld('au-id','Mobile number or email','text','Your registered mobile or email',SVG_ID)+fld('au-name','Full name','text','Name used at sign up',SVG_USER)+fld('au-pw','New password','password','At least 6 characters',SVG_KEY);
+  else f=fld('au-id','Mobile number or email','text','10-digit mobile or email',SVG_ID)+fld('au-pw','Password','password','Your password',SVG_KEY)+'<div class="forgot"><a id="au-forgot">Forgot password?</a></div>';
+  const btn=m==='signup'?'Create account':m==='reset'?'Reset password':'Log in';
+  au.innerHTML=`<div class="auh"><button class="ib" id="au-back" aria-label="Back"><svg class="ic"><use href="#back"/></svg></button></div>
+  <div class="aub"><div class="aulg"><img src="logo.png" alt=""></div><h1>${title}</h1><p class="sub">${sub}</p>
+  ${m==='reset'?'':`<div class="aseg"><button data-m="login" class="${m==='login'?'on':''}">Log in</button><button data-m="signup" class="${m==='signup'?'on':''}">Sign up</button></div>`}
+  <div class="aform">${f}<div class="aerr" id="au-err">${auErr}</div><button class="abtn" id="au-go">${btn}</button>
+  ${m==='reset'?'<div class="forgot c"><a id="au-tologin">Back to log in</a></div>':''}
+  <p class="anote">${SVG_KEY.replace('<svg','<svg class="nk"')} Your account and password stay on this phone. Nothing is sent to any server.</p></div></div>`;
+  const pw=document.getElementById('au-pw');
+  if(pw&&m==='signup')pw.addEventListener('input',()=>{const sc=strength(pw.value);const b=document.getElementById('au-st');b.style.width=(pw.value?Math.max(sc,1)*25:0)+'%';b.dataset.s=sc;document.getElementById('au-stt').textContent=pw.value?['Too weak','Weak','Okay','Good','Strong'][sc]:''});
+  au.querySelectorAll('input').forEach(i=>{i.addEventListener('keydown',e=>{if(e.key==='Enter')doAuth()});i.addEventListener('input',()=>{if(auErr)authErr('')})});
+}
+function authErr(m){auErr=m;const e=document.getElementById('au-err');if(e)e.textContent=m}
+function secure(pw){const salt=N.authSalt(),hash=N.authHash(pw,salt);return(salt&&hash)?{salt,hash}:null}
+function doAuth(){
+  const v=id=>{const e=document.getElementById(id);return e?e.value:''};
+  const L=accList();
+  if(auMode==='signup'){
+    const name=v('au-name').trim().replace(/\s+/g,' '),id=normId(v('au-id')),pw=v('au-pw'),pw2=v('au-pw2');
+    if(name.length<2)return authErr('Please enter your full name');
+    if(!id)return authErr('Enter a valid email or 10-digit mobile number');
+    if(L.some(a=>a.id===id))return authErr('An account with this '+(id.indexOf('@')>=0?'email':'number')+' already exists. Please log in.');
+    if(pw.length<6)return authErr('Password must be at least 6 characters');
+    if(pw!==pw2)return authErr('Passwords do not match');
+    const sec=secure(pw);if(!sec)return authErr('Could not secure your password. Please try again.');
+    L.push({id,name,salt:sec.salt,hash:sec.hash,created:Date.now()});
+    N.setSetting('accounts',JSON.stringify(L));N.setSetting('session',id);
+    closeAuth();window.pvToast('Welcome to Pravah, '+name.split(' ')[0]+'!');
+  }else if(auMode==='reset'){
+    const id=normId(v('au-id')),name=v('au-name').trim().replace(/\s+/g,' ').toLowerCase(),pw=v('au-pw');
+    const a=L.find(x=>x.id===id);
+    if(!id)return authErr('Enter your registered email or mobile number');
+    if(!a||a.name.toLowerCase()!==name)return authErr('These details do not match any account');
+    if(pw.length<6)return authErr('Password must be at least 6 characters');
+    const sec=secure(pw);if(!sec)return authErr('Could not secure your password. Please try again.');
+    N.setSetting('accounts',JSON.stringify(L.map(x=>x.id===id?Object.assign({},x,{salt:sec.salt,hash:sec.hash}):x)));
+    N.setSetting('session',id);closeAuth();window.pvToast('Password changed. You are logged in.');
+  }else{
+    const id=normId(v('au-id')),pw=v('au-pw');
+    if(!id)return authErr('Enter a valid email or 10-digit mobile number');
+    if(!pw)return authErr('Please enter your password');
+    const a=L.find(x=>x.id===id);
+    if(!a)return authErr('No account found. Tap Sign up to create one.');
+    if(N.authHash(pw,a.salt)!==a.hash)return authErr('Wrong password. Try again or reset it.');
+    N.setSetting('session',id);closeAuth();window.pvToast('Welcome back, '+a.name.split(' ')[0]+'!');
+  }
+}
+function openAuth(mode){ov.auth=true;auMode=mode==='signup'?'signup':'login';auErr='';renderAuth();au.classList.add('on');ovSync();setTimeout(()=>{const i=document.getElementById(auMode==='signup'?'au-name':'au-id');i&&i.focus()},120)}
+function closeAuth(){ov.auth=false;au.classList.remove('on');document.activeElement&&document.activeElement.blur();ovSync()}
+window.openAuth=openAuth;
+au.addEventListener('click',e=>{
+  if(e.target.closest('#au-back'))return closeAuth();
+  const sg=e.target.closest('.aseg button');if(sg){auMode=sg.dataset.m;auErr='';renderAuth();return}
+  if(e.target.closest('#au-go'))return doAuth();
+  if(e.target.closest('#au-forgot')){auMode='reset';auErr='';renderAuth();return}
+  if(e.target.closest('#au-tologin')){auMode='login';auErr='';renderAuth();return}
+  const eye=e.target.closest('[data-eye]');if(eye){const i=document.getElementById(eye.dataset.eye);const show=i.type==='password';i.type=show?'text':'password';eye.textContent=show?'Hide':'Show'}
+});
+
 shapeSync();scRender();
 })();
 
@@ -421,7 +543,7 @@ shapeSync();scRender();
     try{N.setBars(hex(tc),hex(bc),lum(tc)<.62,lum(bc)<.62)}catch(e){}
   };
   window.syncBars=function(){
-    const w=(S.settings&&S.settings.wall)||'none',on=(S.mode==='home'||S.mode==='about')&&w!=='none';
+    const w=(S.settings&&S.settings.wall)||'none',on=(S.mode==='home'||S.mode==='about')&&w!=='off';
     const k=on?w+'|'+(w==='custom'?(typeof wallData==='string'?wallData.length:0):0):'off';
     if(k===key)return;key=k;
     if(!on){try{N.setBars('','',false,false)}catch(e){}return}

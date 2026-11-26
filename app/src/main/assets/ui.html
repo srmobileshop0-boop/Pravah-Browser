@@ -562,7 +562,6 @@ html[data-font=casual],html[data-font=casual] :is(button,input){font-family:casu
 .pills span{padding:7px 12px;border-radius:16px;font-size:12.5px;font-weight:700;background:#F2F4FA}
 .feat{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 4px}
 .fti{border-radius:22px;padding:14px;background:var(--surface);border:1px solid var(--line);box-shadow:0 8px 20px rgba(34,60,160,.07)}
-.fti i{font-style:normal;font-size:22px;display:grid;place-items:center;width:44px;height:44px;border-radius:15px;background:var(--c,#EEF3FF);margin-bottom:10px}
 .fti b{display:block;font-size:14px;margin-bottom:2px}.fti small{display:block;color:var(--sub);font-size:12px;line-height:1.35}
 .foot{text-align:center;color:#9AA3B5;font-size:12.5px;padding:24px 0 36px}
 /* ---------- wallpaper behind home + About, everything transparent ---------- */
@@ -585,9 +584,84 @@ html.wpShow #p-about{--text:#fff;--sub:rgba(255,255,255,.8);--line:rgba(255,255,
 html.wpShow #p-about .card2,html.wpShow #p-about .fti{-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:none}
 html.wpShow #p-about .pills span,html.wpShow #p-about .abh2 .vp{background:rgba(255,255,255,.2);color:#fff}
 html.wpShow #p-about .foot{color:rgba(255,255,255,.7)}
-html.wpShow #p-about .fti i{background:rgba(255,255,255,.88)}
 html.wpShow #p-about .ib{color:#fff}
 html.wpShow #p-about .abh2 h2{background:none;-webkit-text-fill-color:#fff;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.45)}
+/* ---------- v1.9: auth, account, about, mini start page, toast ---------- */
+#pvtoast{position:fixed;left:50%;bottom:110px;transform:translate(-50%,20px);background:rgba(20,22,28,.94);color:#fff;padding:12px 20px;border-radius:22px;font-weight:700;font-size:14px;opacity:0;pointer-events:none;transition:.25s;z-index:200;max-width:86vw;text-align:center}
+#pvtoast.on{opacity:1;transform:translate(-50%,0)}
+.qp{background:linear-gradient(135deg,#F4F7FF,#FFFFFF 70%)}
+.qp .av{background:linear-gradient(135deg,#E6ECFF,#F5F7FF);box-shadow:0 4px 12px rgba(47,107,255,.15)}
+.qp .av .ic{color:#2F6BFF}
+.pill.fill{background:linear-gradient(135deg,#FF9933,#2F6BFF 60%,#138808 130%);border:0;color:#fff;box-shadow:0 6px 14px rgba(47,107,255,.3)}
+.signhint{text-align:center;font-size:13.5px;color:var(--sub);margin:10px 0 2px}
+.signhint a{color:#2F6BFF;font-weight:800}
+.acch{display:flex;flex-direction:column;align-items:center;padding:12px 0 18px}
+.acch .av.big{width:92px;height:92px;border-radius:50%;background:linear-gradient(135deg,#FF9933,#2F6BFF 60%,#138808 130%);color:#fff;font-size:40px;font-weight:800;display:grid;place-items:center;box-shadow:0 12px 26px rgba(47,107,255,.32)}
+.acch b{font-size:22px;font-weight:800;margin-top:12px}.acch small{color:var(--sub);font-size:14px;margin-top:2px}
+.acch .mem{margin-top:10px;padding:5px 14px;border-radius:14px;background:#EAF0FF;color:#2F6BFF;font-weight:700;font-size:12.5px}
+#auth{position:fixed;inset:0;background:#fff;display:none;flex-direction:column;z-index:96}
+#auth.on{display:flex}
+.auh{padding:12px 8px 0;flex:none}
+.aub{flex:1;overflow-y:auto;padding:0 22px 40px;display:flex;flex-direction:column;align-items:center}
+.aulg img{width:96px;height:96px;display:block;filter:drop-shadow(0 12px 18px rgba(20,70,255,.25))}
+.aub h1{font-size:26px;font-weight:900;letter-spacing:-.6px;margin:12px 0 4px;text-align:center}
+.aub .sub{color:var(--sub);font-size:14.5px;text-align:center;margin-bottom:16px}
+.aseg{display:flex;width:100%;max-width:380px;background:#F1F4FA;border-radius:22px;padding:4px;margin-bottom:14px}
+.aseg button{flex:1;height:42px;border:0;border-radius:18px;background:transparent;font-weight:800;font-size:15px;color:#6B7280}
+.aseg button.on{background:#fff;color:#14161C;box-shadow:0 4px 12px rgba(34,60,160,.14)}
+.aform{width:100%;max-width:380px}
+.af{display:block;margin-top:12px}.af>span{display:block;font-size:12.5px;font-weight:800;color:#6B7280;margin:0 0 6px 4px;letter-spacing:.3px}
+.ai{display:flex;align-items:center;gap:10px;height:54px;padding:0 14px;border-radius:18px;background:#F4F6FB;border:1.5px solid transparent}
+.ai:focus-within{border-color:#2F6BFF;background:#fff;box-shadow:0 0 0 4px rgba(47,107,255,.12)}
+.ai>svg{width:20px;height:20px;flex:none;fill:none;stroke:#8A93A6;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.ai input{flex:1;min-width:0;border:0;outline:0;background:transparent;font-size:16px;font-weight:500;color:var(--text)}
+.ai .eye{border:0;background:none;color:#2F6BFF;font-weight:800;font-size:13px;padding:6px}
+.pwm{height:5px;border-radius:3px;background:#E9EDF5;margin:10px 4px 18px;position:relative}
+.pwm i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;width:0;background:#E5484D;transition:.2s}
+.pwm i[data-s="2"]{background:#F2A900}.pwm i[data-s="3"]{background:#7ACB3B}.pwm i[data-s="4"]{background:#12A05B}
+.pwm small{position:absolute;right:0;top:9px;font-size:11.5px;color:#6B7280;font-weight:700}
+.forgot{text-align:right;margin:10px 4px 0}.forgot.c{text-align:center;margin-top:16px}.forgot a{color:#2F6BFF;font-weight:800;font-size:14px}
+.aerr{min-height:20px;margin:12px 4px 0;color:#E5484D;font-weight:700;font-size:13.5px}
+.abtn{width:100%;height:56px;border:0;border-radius:28px;margin-top:6px;background:linear-gradient(135deg,#FF9933,#2F6BFF 58%,#138808 135%);color:#fff;font-size:17px;font-weight:800;box-shadow:0 12px 24px rgba(47,107,255,.35)}
+.abtn:active{transform:scale(.98)}
+.anote{display:flex;gap:8px;align-items:flex-start;margin-top:18px;font-size:12.5px;color:#8A93A6;line-height:1.45;text-align:left}
+.anote .nk{width:16px;height:16px;flex:none;fill:none;stroke:#8A93A6;stroke-width:1.9;margin-top:1px}
+.fi2{display:inline-grid;place-items:center;width:44px;height:44px;border-radius:15px;background:linear-gradient(135deg,var(--c1),var(--c2));box-shadow:0 6px 14px rgba(34,60,160,.18);flex:none}
+.fi2 svg{width:24px;height:24px}
+.fi2.mini{width:18px;height:18px;border-radius:6px;vertical-align:-4px;box-shadow:none}.fi2.mini svg{width:11px;height:11px}
+.fti{display:flex;flex-direction:column;align-items:flex-start}.fti .fi2{margin-bottom:10px}
+.abtns{display:flex;gap:10px;margin-top:16px;width:100%;max-width:340px}
+.abtn2{flex:1;display:flex;align-items:center;gap:10px;height:56px;padding:0 12px;border-radius:20px;border:1px solid var(--line);background:var(--surface);font-weight:800;font-size:14.5px;color:var(--text)}
+.abtn2 .fi2{width:34px;height:34px;border-radius:12px}.abtn2 .fi2 svg{width:19px;height:19px}
+.nw .nwi{display:flex;gap:12px;padding:13px 16px;border-bottom:1px solid var(--line)}.nw .nwi:last-child{border:0}
+.nw .dot{width:9px;height:9px;border-radius:50%;margin-top:6px;background:linear-gradient(135deg,#FF9933,#138808);flex:none}
+.nw b{display:block;font-size:14.5px}.nw small{display:block;color:var(--sub);font-size:12.5px;margin-top:2px}
+.dev{border-radius:26px;padding:18px;background:linear-gradient(135deg,#0A2C96,#1B47D6 60%,#0F7A3A 140%);color:#fff;box-shadow:0 14px 30px rgba(20,60,200,.28);margin:0 4px}
+.dtop{display:flex;gap:14px;align-items:center}
+.dav{width:68px;height:68px;border-radius:22px;background:linear-gradient(135deg,#FFB347,#FF7A18);display:grid;place-items:center;font-size:26px;font-weight:900;color:#fff;box-shadow:0 8px 18px rgba(0,0,0,.25);flex:none}
+.dt b{display:block;font-size:21px;font-weight:900;letter-spacing:-.4px}.dt small{display:block;opacity:.85;font-size:13px;margin-top:2px}
+.dtag{display:inline-block;margin-top:8px;padding:4px 10px;border-radius:12px;background:rgba(255,255,255,.18);font-size:12px;font-weight:800}
+.dmsg{margin:14px 2px 14px;font-size:14px;line-height:1.55;opacity:.92}
+.dlinks{display:flex;flex-direction:column;gap:10px}
+.dl{display:flex;align-items:center;gap:12px;text-align:left;padding:10px 12px;border-radius:18px;border:0;background:rgba(255,255,255,.14);color:#fff}
+.dl .fi2{width:38px;height:38px;border-radius:13px;box-shadow:none}.dl .fi2 svg{width:21px;height:21px}
+.dl b{display:block;font-size:15px}.dl small{display:block;opacity:.8;font-size:12.5px;margin-top:1px}
+html.wpShow #p-about .abtn2{background:rgba(255,255,255,.16);color:#fff;border-color:rgba(255,255,255,.28)}
+html.wpShow #p-about .dev{box-shadow:none;border:1px solid rgba(255,255,255,.25);background:linear-gradient(135deg,rgba(10,44,150,.8),rgba(27,71,214,.75) 60%,rgba(15,122,58,.8))}
+html.wpShow #p-about .nw .nwi{border-color:rgba(255,255,255,.2)}
+.foot .fi2{vertical-align:-4px}
+/* mini start page shown on the Tabs screen */
+.mh{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;gap:9px;padding:14px 9px 9px;background:#fff;background-size:cover;background-position:center;overflow:hidden}
+.mh-l img{width:54px;height:54px;display:block;filter:drop-shadow(0 6px 8px rgba(20,70,255,.3))}
+.mh-s{width:100%;height:22px;border-radius:11px;background:#fff;box-shadow:0 3px 8px rgba(34,60,160,.2),0 0 0 1.2px #FF9933;display:flex;align-items:center;gap:5px;padding:0 6px;font-size:8.5px;color:#8A93A6;white-space:nowrap;overflow:hidden}
+.mh-s i{width:11px;height:11px;border-radius:50%;background:#E6EDFF;flex:none}
+.mh-g{display:grid;grid-template-columns:repeat(4,1fr);gap:8px 6px;width:100%;margin-top:3px}
+.mh-i{aspect-ratio:1;display:block}
+.mh-i .tl{width:100%;height:100%;border-radius:28%;box-shadow:0 2px 5px rgba(0,0,0,.18)}
+.mh-q{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;width:100%;margin-top:auto}
+.mh-q b{height:22px;border-radius:9px;background:rgba(120,130,160,.16)}
+.mh.wp .mh-q b{background:rgba(255,255,255,.22)}
+.nw .dot{display:block;width:9px;height:9px;min-width:9px;border-radius:50%!important;padding:0;margin-top:7px}
 </style>
 </head>
 <body>
@@ -707,6 +781,7 @@ html.wpShow #p-about .abh2 h2{background:none;-webkit-text-fill-color:#fff;color
    </div></div>
  </section>
  <div id="wp-page"></div><div id="wp-prev"></div>
+ <div id="auth"></div>
  <div id="addsc"><div class="box"><h3>Add shortcut</h3><input id="as-n" type="text" placeholder="Name (optional)" autocomplete="off"><input id="as-u" type="url" placeholder="Website, e.g. x.com" autocomplete="off" autocapitalize="off" spellcheck="false"><div class="acts"><button id="as-no">Cancel</button><button class="yes" id="as-yes">Add</button></div></div></div>
 
 <!-- TABS -->
@@ -829,7 +904,9 @@ $('#q-hi').onclick=()=>N.nav('history','');
 $('#q-dl').onclick=()=>N.nav('downloads','');
 $('#q-pl').onclick=()=>N.nav('playlist','');
 $$('.back').forEach(b=>b.onclick=()=>N.nav('back',''));
-function updateGreet(){try{$('#gdate').textContent=new Date().toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'})}catch(e){}const h=new Date().getHours();$('#greet').textContent=h<5?'Good night':h<12?'Good morning':h<17?'Good afternoon':h<21?'Good evening':'Good night'}
+function accList(){try{const a=JSON.parse(S.settings.accounts||'[]');return Array.isArray(a)?a:[]}catch(e){return[]}}
+function curAccount(){const id=S.settings.session||'';return id?(accList().find(x=>x.id===id)||null):null}
+function updateGreet(){try{$('#gdate').textContent=new Date().toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'})}catch(e){}const h=new Date().getHours();const g=h<5?'Good night':h<12?'Good morning':h<17?'Good afternoon':h<21?'Good evening':'Good night',ac=curAccount(),fn=ac?ac.name.split(' ')[0]:'';$('#greet').textContent=g+(fn&&fn.length<=8?', '+fn:'')}
 function updateHome(){updateGreet();if(window.scSync)window.scSync();$$('.eng').forEach(b=>b.classList.toggle('sel',b.dataset.e===S.settings.engine))}
 
 /* ---------- bottom bar ---------- */
@@ -856,6 +933,7 @@ function cardHtml(t){
   const icon=t.blank?`<span class="fv" style="background:none">${ico('home')}</span>`:fav(t.url);
   let body;
   if(t.thumb)body=`<img class="th" src="${t.thumb}" alt="">`;
+  else if(t.blank&&window.miniHome)body=window.miniHome();
   else body=`<div class="ph"><div class="mark"><img src="logo.png" alt=""></div><b>${t.blank?'Pravah':esc(host(t.url))}</b></div>`;
   return `<div class="card${t.active?' act':''}" data-id="${t.id}"><div class="chead">${icon}<span class="ttl">${esc(title)}</span><button class="x" aria-label="Close tab">${ico('close')}</button></div><div class="cbody">${body}</div></div>`;
 }
@@ -994,7 +1072,7 @@ function themeCard(key){return t=>`<button class="th${S.settings[key]===t.k?' se
 /* ---------- settings (Quetta-style, with sub-pages) ---------- */
 let sp=[],lastSp='',wallData='',pickCb=null,icb=null;
 let delSel={hist:true,cookies:false,cache:false,bms:false,dls:false,range:'all'};
-const SUBT={search:'Search Engine',touch:'Touch to Search',look:'Appearance',abar:'Customize Address Bar',cmenu:'Customize Menu',wall:'Wallpaper',ext:'Extensions',video:'Video Options',vbg:'Listen In Background',vtool:'Show Video Toolbar',vmenu:'Show Video Menu',yt:'YouTube Option',dls:'Download Settings',acc:'Accessibility',guard:'Privacy Guard',g_ads:'Ads & Trackers Blocker',g_https:'Always Use HTTPS',g_fp:'Remove Fingerprint',g_js:'Script Control',g_cookie:'Cookie Management',g_redir:'Stop App Redirects',g_site:'Site Settings',g_adv:'Advanced',g_rtc:'WebRTC IP Protection',lock:'Lock Access',data:'Manage Personal Data',d_del:'Delete Browsing Data',d_exit:'Delete on Exit',d_spec:'Delete Specific Data'};
+const SUBT={search:'Search Engine',touch:'Touch to Search',look:'Appearance',account:'My account',abar:'Customize Address Bar',cmenu:'Customize Menu',wall:'Wallpaper',ext:'Extensions',video:'Video Options',vbg:'Listen In Background',vtool:'Show Video Toolbar',vmenu:'Show Video Menu',yt:'YouTube Option',dls:'Download Settings',acc:'Accessibility',guard:'Privacy Guard',g_ads:'Ads & Trackers Blocker',g_https:'Always Use HTTPS',g_fp:'Remove Fingerprint',g_js:'Script Control',g_cookie:'Cookie Management',g_redir:'Stop App Redirects',g_site:'Site Settings',g_adv:'Advanced',g_rtc:'WebRTC IP Protection',lock:'Lock Access',data:'Manage Personal Data',d_del:'Delete Browsing Data',d_exit:'Delete on Exit',d_spec:'Delete Specific Data'};
 const BARBTNS=[['home','Home','home'],['back','Back','back'],['forward','Forward','fwd'],['newtab','New Tab','plus'],['refresh','Refresh','refresh'],['extension','Extension','o-puzzle'],['favorites','Favorites','star0']];
 const FONTS=[['default','Default'],['serif','Serif'],['mono','Monospace'],['casual','Casual']];
 const WALLS=[['none','None',''],['w1','Aurora','linear-gradient(160deg,#0f2027,#2c5364 45%,#3ddc97)'],['w2','Sunset','linear-gradient(160deg,#ff9966,#ff5e62 50%,#7b2ff7)'],['w3','Ocean','linear-gradient(160deg,#00c6ff,#0072ff 55%,#1b1464)'],['w4','Forest','linear-gradient(160deg,#134e5e,#71b280)'],['w5','Candy','linear-gradient(160deg,#f6d365,#fda085 45%,#f093fb)'],['w6','Night sky','linear-gradient(160deg,#0f0c29,#302b63 55%,#24243e)']];
@@ -1007,7 +1085,7 @@ const qn=t=>`<div class="qn">${t}</div>`;
 const info=(ic,t,p)=>`<div class="q qi">${ico(ic)}<b>${t}</b><p>${p}</p></div>`;
 const radio=(k,v,t,sub,cur)=>`<button class="qr${cur===v?' on':''}" data-set="${k}:${v}"><span class="t">${t}${sub?`<small>${sub}</small>`:''}</span><span class="rad"></span></button>`;
 const fontName=()=>(FONTS.find(f=>f[0]===(S.settings.uiFont||'default'))||FONTS[0])[1];
-const wallName=()=>{const w=S.settings.wall||'none';if(w==='custom')return 'My photo';if(w==='none')return 'None';return (window.wallLabel&&window.wallLabel(w))||(WALLS.find(x=>x[0]===w)||WALLS[0])[1]};
+const wallName=()=>{const w=S.settings.wall||'none';if(w==='custom')return 'My photo';return (window.wallLabel&&window.wallLabel(w))||(WALLS.find(x=>x[0]===w)||WALLS[0])[1]};
 const RANGES=[['hour','Last hour'],['day','Last 24 hours'],['week','Last 7 days'],['all','All time']];
 function siteList(){
   const m={};(S.history||[]).forEach(h=>{const k=host(h.url);if(k)m[k]=(m[k]||0)+1});
@@ -1023,6 +1101,13 @@ function sPage(id){
     <div class="q" style="margin-top:14px">${qr('','Touch to Search',{go:'touch',chev:1})}</div>`}
   case 'touch':return `${qsec('Touch to search')}<div class="q">${qt('touchSearch','','Touch to Search')}</div>${info('o-search','Touch to Search','Select any word or sentence on a page and a Search button appears. Tap it to search in a new tab.')}`;
   case 'wall':return `<div class="q">${qr('o-wall','Choose wallpaper',{act:'wpicker',sub:wallName()})}${qr('o-wall','Choose from gallery',{act:'wallpick',sub:'Pick a photo for your start page'})}</div>${qn('The wallpaper is shown on the Pravah start page. You can also tap the picture icon at the top of the start page.')}`;
+  case 'account':{
+    const a=curAccount();
+    if(!a)return `<div class="empty">${ico('user')}<b>You are not logged in</b>Log in from the Settings page.</div>`;
+    const d=new Date(a.created||Date.now()).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+    return `<div class="acch"><div class="av big">${esc(a.name[0].toUpperCase())}</div><b>${esc(a.name)}</b><small>${esc(a.id)}</small><span class="mem">Member since ${d}</span></div>
+    <div class="q">${qr('o-person','Edit name',{act:'editname'})}${qr('o-unlock','Change password',{act:'chpw'})}</div>
+    <div class="q" style="margin-top:14px">${qr('power','Log out',{act:'logout'})}${qr('o-trash','Delete account',{act:'delacc',cls:'danger'})}</div>${qn('Your account is stored only on this device. Nothing is sent to any server.')}`}
   case 'abar':{
     const bb=st.barBtn||'home',pos=st.addrBar==='bottom'?'bottom':'top',cb=BARBTNS.find(x=>x[0]===bb)||BARBTNS[0];
     const rows=BARBTNS.map(x=>`<button class="qr ar" data-set="barBtn:${x[0]}"><span class="rd${bb===x[0]?' on':''}"></span><span class="t">${x[1]}</span>${x[0]==='home'?`<span class="chl" data-act="custhome">Custom Homepage</span>`:''}</button>`).join('');
@@ -1079,9 +1164,9 @@ function sPage(id){
     if(!L.length)return `<div class="empty">${ico('o-globe')}<b>No site data yet</b>Pages you visit will be listed here.</div>`;
     return `<div class="q">${L.map(x=>`<div class="qr" data-site="${esc(x[0])}">${fav('https://'+x[0])}<span class="t">${esc(x[0])}<small>${x[1]} page${x[1]>1?'s':''}</small></span>${ico('o-trash','tr')}</div>`).join('')}</div>${qn('Deleting a site removes its history and cookies.')}`}
   default:{ /* main */
-    const def=S.about&&S.about.isDefault,nm=(st.profName||'').trim();
-    const prof=nm?`<div class="q qp"><div class="av me">${esc(nm[0].toUpperCase())}</div><div class="pt"><b>${esc(nm)}</b><small>${esc(st.profEmail||'Signed in on this device')}</small></div><button class="pill" data-act="logout">Log out</button></div>`
-      :`<div class="q qp"><div class="av">${ico('user')}</div><div class="pt"><b>Sign in to Pravah</b><small>Personalise your browser</small></div><button class="pill" data-act="login">Log in</button></div>`;
+    const def=S.about&&S.about.isDefault,acc=curAccount();
+    const prof=acc?`<div class="q qp acc" data-go="account"><div class="av me">${esc(acc.name[0].toUpperCase())}</div><div class="pt"><b>${esc(acc.name)}</b><small>${esc(acc.id)}</small></div><span class="pill fill">Account</span></div>`
+      :`<div class="q qp"><div class="av">${ico('user')}</div><div class="pt"><b>Sign in to Pravah</b><small>Personalise your browser</small></div><button class="pill fill" data-act="login">Log in</button></div><div class="signhint">New to Pravah? <a data-act="signup">Create an account</a></div>`;
     return `${prof}
     ${qsec('General')}<div class="q">${qr('o-search','Search Engine',{go:'search',sub:esc(engName(st.engine||'google'))})}${qr('o-face','Appearance',{go:'look'})}${qr('o-addr','Customize Address Bar',{go:'abar'})}${qr('o-gear','Customize Menu',{go:'cmenu'})}${qr('o-puzzle','Extensions',{go:'ext',tag:'Built-in'})}${qr('o-play','Video Options',{go:'video'})}${qr('o-dl','Download Settings',{go:'dls'})}${qr('o-access','Accessibility',{go:'acc'})}</div>
     ${qsec('Privacy &amp; Security')}<div class="q">${qr('o-guard','Privacy Guard',{go:'guard'})}${qr('o-unlock','Lock Access',{go:'lock'})}${qr('o-person','Manage Personal Data',{go:'data'})}</div>
@@ -1157,15 +1242,29 @@ function sAct(a){
     const ms={hour:3600e3,day:864e5,week:6048e5,all:0}[delSel.range];
     ask('Delete selected data?','This cannot be undone.','Delete',()=>N.deleteData(JSON.stringify({hist:delSel.hist,cookies:delSel.cookies,cache:delSel.cache,bms:delSel.bms,dls:delSel.dls,since:ms?Date.now()-ms:0})));
   }
-  else if(a==='login'){
-    openInput('Sign in to Pravah','Your profile is stored only on this device.',[{label:'Name',ph:'Your name',val:st.profName},{label:'Email',ph:'you@example.com',val:st.profEmail,type:'email'}],'Log in',v=>{
-      const n=v[0].trim(),m=v[1].trim();
-      if(!n)return 'Please enter your name';
-      if(m&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(m))return 'Please enter a valid email';
-      N.setSetting('profName',n);N.setSetting('profEmail',m);
+  else if(a==='login'||a==='signup'){if(window.openAuth)window.openAuth(a)}
+  else if(a==='logout')ask('Log out?','You can log in again any time.','Log out',()=>{N.setSetting('session','');sp=[];renderSettings();rep()});
+  else if(a==='editname'){
+    const ac=curAccount();if(!ac)return;
+    openInput('Edit name','This name is shown on your account.',[{label:'Full name',ph:'Your name',val:ac.name}],'Save',v=>{
+      const n=(v[0]||'').trim().replace(/\s+/g,' ');if(n.length<2)return 'Please enter your full name';
+      N.setSetting('accounts',JSON.stringify(accList().map(x=>x.id===ac.id?Object.assign({},x,{name:n}):x)));
     });
   }
-  else if(a==='logout')ask('Log out?','Your profile will be removed from this device.','Log out',()=>{N.setSetting('profName','');N.setSetting('profEmail','')});
+  else if(a==='chpw'){
+    const ac=curAccount();if(!ac)return;
+    openInput('Change password','Use at least 6 characters.',[{label:'Current password',ph:'Current password',type:'password'},{label:'New password',ph:'New password',type:'password'}],'Change',v=>{
+      if(N.authHash(v[0]||'',ac.salt)!==ac.hash)return 'Current password is wrong';
+      if((v[1]||'').length<6)return 'New password must be at least 6 characters';
+      const salt=N.authSalt(),hash=N.authHash(v[1],salt);if(!salt||!hash)return 'Could not secure the password';
+      N.setSetting('accounts',JSON.stringify(accList().map(x=>x.id===ac.id?Object.assign({},x,{salt,hash}):x)));
+      if(window.pvToast)window.pvToast('Password changed');
+    });
+  }
+  else if(a==='delacc'){
+    const ac=curAccount();if(!ac)return;
+    ask('Delete account?','This removes your account from this device.','Delete',()=>{N.setSetting('accounts',JSON.stringify(accList().filter(x=>x.id!==ac.id)));N.setSetting('session','');sp=[];renderSettings();rep()});
+  }
   else if(a==='addeng'){
     openInput('Custom Search Engine','Use %s where the search words go, e.g. https://example.com/search?q=%s',[{label:'Name',ph:'My search'},{label:'URL with %s',ph:'https://example.com/search?q=%s',type:'url'}],'Add',v=>{
       const n=v[0].trim(),u=v[1].trim();
@@ -1222,26 +1321,50 @@ function applyLook(){
 }
 
 /* ---------- about ---------- */
+const FI={
+ shield:'<path d="M12 3l7 3v5.5c0 4.6-3 7.6-7 9.5-4-1.900-7-4.900-7-9.500V6z"/><path d="M8.800 12l2.200 2.200 4.200-4.400"/>',
+ block:'<circle cx="12" cy="12" r="8.500"/><path d="M6 6l12 12"/>',
+ glasses:'<circle cx="7" cy="14.500" r="3.300"/><circle cx="17" cy="14.500" r="3.300"/><path d="M10.300 14.500h3.400M3.700 14.500L5.500 8h3M20.300 14.500L18.500 8h-3"/>',
+ moon:'<path d="M20 14.500A8.200 8.200 0 1 1 9.500 4a6.600 6.600 0 0 0 10.500 10.500z"/>',
+ book:'<path d="M2.500 5h5.500a4 4 0 0 1 4 4v11a3 3 0 0 0-3-3H2.500z"/><path d="M21.500 5H16a4 4 0 0 0-4 4v11a3 3 0 0 1 3-3h6.500z"/>',
+ find:'<circle cx="10.500" cy="10.500" r="6.500"/><path d="M20.500 20.500l-5.400-5.400"/>',
+ puzzle:'<path d="M10 4.500a2 2 0 0 1 4 0V6h3.500A1.500 1.500 0 0 1 19 7.500V11h-1.500a2 2 0 0 0 0 4H19v3.500a1.500 1.500 0 0 1-1.500 1.500H14v-1.500a2 2 0 0 0-4 0V20H6.500A1.500 1.500 0 0 1 5 18.500V15h1.500a2 2 0 0 0 0-4H5V7.500A1.500 1.500 0 0 1 6.500 6H10z"/>',
+ image:'<rect x="3" y="4" width="18" height="16" rx="3.500"/><circle cx="9" cy="9.500" r="1.900"/><path d="M3.500 17.500l5-4.500 3.500 3.200 3-2.700 5.500 4.500"/>',
+ dl:'<path d="M12 4v11"/><path d="M7.500 11l4.500 4.500 4.500-4.500"/><path d="M5 20h14"/>',
+ star:'<path d="M12 3.200l2.700 5.500 6 .9-4.400 4.200 1 6-5.300-2.900-5.400 2.900 1-6L3.300 9.600l6-.9z"/>',
+ heart:'<path d="M12 20s-7.500-4.400-7.500-10A4.300 4.300 0 0 1 12 7.600 4.300 4.300 0 0 1 19.500 10c0 5.600-7.500 10-7.500 10z"/>',
+ share:'<circle cx="6" cy="12" r="2.500"/><circle cx="17.500" cy="6" r="2.500"/><circle cx="17.500" cy="18" r="2.500"/><path d="M8.200 10.800l7.100-3.600M8.200 13.200l7.100 3.600"/>',
+ mail:'<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3.500 7.500L12 13l8.500-5.500"/>',
+ globe:'<circle cx="12" cy="12" r="8.500"/><path d="M3.500 12h17M12 3.500c2.500 2.600 3.600 5.400 3.600 8.500S14.500 17.900 12 20.500M12 3.500C9.500 6.100 8.400 8.900 8.400 12s1.100 5.900 3.600 8.500"/>',
+ insta:'<rect x="4" y="4" width="16" height="16" rx="5"/><circle cx="12" cy="12" r="3.700"/><circle cx="16.800" cy="7.200" r=".9" fill="currentColor"/>'
+};
+const fico=(k,c1,c2)=>`<i class="fi2" style="--c1:${c1};--c2:${c2}"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${FI[k]}</svg></i>`;
 function renderAbout(){
-  const a=S.about||{},kv=(k,v)=>`<div class="kv"><span>${k}</span><span>${esc(v)}</span></div>`;
-  const F=[['🛡️','Ad & tracker blocking','Cleaner, faster pages','#E8F7EE'],['🚫','Pop-up shield','No surprise ad pages','#FFEDEA'],['🕶️','Private tabs','Nothing is saved','#EEF0FF'],['🌙','Night & dark mode','Easy on your eyes','#EDEBFF'],['📖','Reader mode','Distraction-free reading','#FFF4E0'],['🔎','Find on page','Jump to any word','#E6F4FF'],['🧩','Free shortcuts','Place them anywhere','#FDE9F3'],['🖼️','Wallpapers','Tech, Nature, Modern','#E5F7F6'],['⬇️','Downloads','Built-in manager','#EAF1FF'],['⭐','Bookmarks & history','Always on your device','#FFF8DB']];
+  const a=S.about||{},kv=(k,v)=>`<div class="kv"><span>${k}</span><span>${esc(v)}</span></div>`,ver=a.version||'1.9';
+  const F=[['shield','Ad & tracker blocking','Cleaner, faster pages','#34C77B','#12A05B'],['block','Pop-up shield','No surprise ad pages','#FF6B6B','#E5484D'],['glasses','Private tabs','Nothing is saved','#7C83FF','#5B5BEA'],['moon','Night & dark mode','Easy on your eyes','#8E7CFF','#6247E0'],['book','Reader mode','Distraction-free reading','#FFB547','#F08A00'],['find','Find on page','Jump to any word','#3EA9FF','#1F7AE0'],['puzzle','Free shortcuts','Place them anywhere','#FF77B7','#E0449A'],['image','Wallpapers','Tech, Nature, Modern','#2FD0C3','#10A39A'],['dl','Downloads','Videos, files, streams','#4D8DFF','#2F5FE0'],['star','Bookmarks & history','Always on your device','#FFC83D','#F2A900']];
+  const N2=[['Wallpaper behind the start page and About','Glass cards float over your wallpaper'],['Sign up & log in on this device','Personalise Pravah with your own account'],['Better video downloads','Streaming (HLS) videos saved as MP4'],['Stronger ad blocking','Fewer pop-ups, banners and ad strips']];
   $('#alist').innerHTML=`
   <div class="abh2"><div class="lgx"><img class="base" src="logo.png" alt=""><canvas data-globe="1" width="240" height="240"></canvas><img class="ov" src="rings.png" alt=""></div>
-    <h2>Pravah Browser</h2><div class="vp">Version ${esc(a.version||'1.6')}</div>
+    <h2>Pravah Browser</h2><div class="vp">Version ${esc(ver)}</div>
     <p>A fast, private browser with built-in ad blocking &mdash; made in India, for India.</p>
-    <div class="pills"><span>🛡️ Ad-block ${getB('adblock')?'ON':'OFF'}</span><span>🚫 Pop-ups ${getB('popups')?'blocked':'allowed'}</span><span>🇮🇳 Made in India</span></div></div>
+    <div class="pills"><span>🛡️ Ad-block ${getB('adblock')?'ON':'OFF'}</span><span>🚫 Pop-ups ${getB('popups')?'blocked':'allowed'}</span><span>🇮🇳 Made in India</span></div>
+    <div class="abtns"><button class="abtn2" data-act="sharepravah">${fico('share','#4D8DFF','#2F5FE0')}Share app</button><button class="abtn2" data-act="feedback">${fico('mail','#FF8A4C','#F0601A')}Feedback</button></div></div>
   <div class="sec">Highlights</div>
-  <div class="feat">${F.map(f=>`<div class="fti"><i style="--c:${f[3]}">${f[0]}</i><b>${f[1]}</b><small>${f[2]}</small></div>`).join('')}</div>
+  <div class="feat">${F.map(f=>`<div class="fti">${fico(f[0],f[3],f[4])}<b>${f[1]}</b><small>${f[2]}</small></div>`).join('')}</div>
+  <div class="sec">What's new</div>
+  <div class="card2 nw">${N2.map(n=>`<div class="nwi"><span class="dot"></span><div><b>${n[0]}</b><small>${n[1]}</small></div></div>`).join('')}</div>
   <div class="sec">Browser</div>
-  <div class="card2">${kv('Version',a.version||'1.6')}${kv('Engine','Chromium '+(a.engine||''))}${kv('Android',a.android||'')}${kv('Package','com.pravah.browser')}</div>
-  <div class="sec">Protection</div>
-  <div class="card2">${kv('Ad &amp; tracker blocking',getB('adblock')?'On':'Off')}${kv('Pop-up blocking',getB('popups')?'On':'Off')}<div class="kv txt">Ads, trackers and sneaky redirects are stopped before they load, so pages open faster and use less data.</div></div>
-  <div class="sec">Your privacy</div>
-  <div class="card2"><div class="kv txt">Your history, bookmarks and downloads are stored only on this device. Pravah does not sell or share your browsing data.</div></div>
+  <div class="card2">${kv('Version',ver)}${kv('Engine','Chromium '+(a.engine||''))}${kv('Android',a.android||'')}${kv('Package','com.pravah.browser')}</div>
+  <div class="sec">Protection &amp; privacy</div>
+  <div class="card2">${kv('Ad &amp; tracker blocking',getB('adblock')?'On':'Off')}${kv('Pop-up blocking',getB('popups')?'On':'Off')}<div class="kv txt">Ads, trackers and sneaky redirects are stopped before they load, so pages open faster and use less data. Your history, bookmarks, downloads and account stay only on this device.</div></div>
   <div class="sec">Developer</div>
-  <div class="card2">${kv('Created by','Anil Yadav')}${kv('Made with','Love in India 🇮🇳')}</div>
-  <div class="foot">Pravah Browser &middot; Fast &middot; Private &middot; Ad-free</div>`;
+  <div class="dev"><div class="dtop"><div class="dav">AY</div><div class="dt"><b>Anil Yadav</b><small>Creator &amp; developer of Pravah Browser</small><span class="dtag">🇮🇳 Made in India</span></div></div>
+    <p class="dmsg">Pravah was built with love to give everyone a fast, clean and private way to browse. Thank you for using it!</p>
+    <div class="dlinks"><button class="dl" data-open="https://anilyadavapps.blogspot.com">${fico('globe','#3EA9FF','#1F7AE0')}<span><b>More apps</b><small>anilyadavapps.blogspot.com</small></span></button>
+    <button class="dl" data-open="https://www.instagram.com/_anilyadavofficial">${fico('insta','#F58529','#DD2A7B')}<span><b>Instagram</b><small>@_anilyadavofficial</small></span></button></div></div>
+  <div class="foot">Pravah Browser v${esc(ver)} &middot; Fast &middot; Private &middot; Ad-free<br>Made with ${fico('heart','#FF6B8B','#E5484D').replace('class="fi2"','class="fi2 mini"')} in India</div>`;
 }
+$('#alist').onclick=e=>{const o=e.target.closest('[data-open]');if(o){N.open(o.dataset.open);return}const b=e.target.closest('[data-act]');if(b)sAct(b.dataset.act)};
 $('#ab-back').onclick=()=>N.nav('settings','');
 
 /* ---------- confirm dialog ---------- */

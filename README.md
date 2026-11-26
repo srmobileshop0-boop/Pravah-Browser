@@ -63,3 +63,9 @@ Fast, private, ad-free Android browser. Created by Anil Yadav.
 - Stronger ad blocking for video sites: more ad / cam-widget networks, "Ad"/"Sponsored" labelled blocks and native ad strips are hidden
 - Video download button + toolbar is OFF by default (Settings > Video Options > Download button & toolbar, or Download Settings)
 - Downloads fixed: sends Referer / cookies / user-agent, finds the real video behind blob: players, downloads HLS (.m3u8) streams (AES-128 too) and saves them as MP4 in Downloads/Pravah, shows them in the Downloads list
+
+## v1.9
+- Default Pravah wallpaper (start page + About are transparent glass over it); "No wallpaper" in the picker turns it off
+- Sign up / Log in / Forgot password / Account page (edit name, change password, log out, delete). Accounts live on the phone only; passwords are stored as PBKDF2 hashes
+- Tabs screen shows a live miniature of your start page (wallpaper, logo, shortcuts)
+- About: new icons, What's new, Share / Feedback buttons and a richer Anil Yadav developer card
