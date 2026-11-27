@@ -69,3 +69,11 @@ Fast, private, ad-free Android browser. Created by Anil Yadav.
 - Sign up / Log in / Forgot password / Account page (edit name, change password, log out, delete). Accounts live on the phone only; passwords are stored as PBKDF2 hashes
 - Tabs screen shows a live miniature of your start page (wallpaper, logo, shortcuts)
 - About: new icons, What's new, Share / Feedback buttons and a richer Anil Yadav developer card
+
+## v2.0
+- Start page shortcuts no longer pile up at the left after visiting Settings / Menu (layout re-runs when the page is shown again)
+- App icon: logo is smaller inside a white tile, like the Jio icon
+- Downloads keep running in the background (foreground service + notification), segments download in parallel with retries, quality can be chosen for streaming videos, files are named after the page title
+- Pravah Player: tap a downloaded video to play it with -10 / -5 / +5 / +10 second buttons, pause, speed, double-tap to jump, swipe for volume / brightness / seek, resume position, Prev / Next
+- "Play" button on the video toolbar plays a web video (also streaming) in Pravah Player
+- Google: the x next to a recent search removes it (and keeps it removed)

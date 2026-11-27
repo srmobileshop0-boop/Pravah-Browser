@@ -303,6 +303,71 @@
   window.addEventListener('load', sweepLabels);
   window.addEventListener('scroll', scheduleSweep, { passive: true });
 
+  /* ---------- 3d. Google: the x next to a recent search must remove it ---------- */
+  if (/(^|\.)google\.[a-z.]+$/i.test(location.hostname)) {
+    var HK = 'pv_hidden_recent';
+    var readHidden = function () { try { return JSON.parse(localStorage.getItem(HK) || '[]'); } catch (e) { return []; } };
+    var addHidden = function (t) { try { var a = readHidden(); if (a.indexOf(t) < 0) { a.push(t); localStorage.setItem(HK, JSON.stringify(a.slice(-80))); } } catch (e) {} };
+    var closeCtl = function (el) {
+      var n = el;
+      for (var i = 0; i < 5 && n && n !== document.body; i++, n = n.parentElement) {
+        var al = (n.getAttribute && (n.getAttribute('aria-label') || n.getAttribute('title'))) || '';
+        if (/delete|remove|clear|dismiss|हटाएं/i.test(al)) return n;
+        var pth = n.querySelector ? n.querySelector('path') : null;
+        var d = pth ? (pth.getAttribute('d') || '') : '';
+        if (/^M19 6\.41L17\.59 5|^M18\.3 5\.71|^M6 18L18 6/.test(d) && n.querySelectorAll('path').length === 1) return n;
+        var tx = (n.textContent || '').trim();
+        if (tx === '\u00d7' || tx === '\u2715' || tx === '\u2716' || tx === 'x') return n;
+      }
+      return null;
+    };
+    var recentRow = function (el) {
+      var r = el;
+      for (var i = 0; i < 7 && r && r.parentElement && r !== document.body; i++, r = r.parentElement) {
+        var b = r.getBoundingClientRect();
+        if (b.height >= 34 && b.height <= 120 && b.width >= vw() * 0.7 && (r.innerText || '').trim().length > 0) return r;
+      }
+      return null;
+    };
+    document.addEventListener('click', function (e) {
+      try {
+        var c = closeCtl(e.target);
+        if (!c) return;
+        var row = recentRow(c);
+        if (!row) return;
+        var label = (row.innerText || '').trim().split('\n')[0].trim();
+        if (!label) return;
+        setTimeout(function () {
+          try {
+            if (row.isConnected && row.offsetParent !== null && getComputedStyle(row).display !== 'none') {
+              row.style.setProperty('display', 'none', 'important');
+              addHidden(label);
+            }
+          } catch (er) {}
+        }, 600);
+      } catch (err) {}
+    }, true);
+    var sweepRecent = function () {
+      try {
+        var hid = readHidden();
+        if (!hid.length) return;
+        var cand = document.querySelectorAll('li,[role="option"],[role="row"],[role="listitem"],div[jsaction],div[class]');
+        for (var i = 0; i < cand.length && i < 1200; i++) {
+          var el = cand[i];
+          if (el.style.display === 'none') continue;
+          var t = (el.innerText || '').trim().split('\n')[0].trim();
+          if (!t || hid.indexOf(t) < 0) continue;
+          var b = el.getBoundingClientRect();
+          if (b.height >= 34 && b.height <= 120 && el.querySelectorAll('svg').length >= 2) el.style.setProperty('display', 'none', 'important');
+        }
+      } catch (e) {}
+    };
+    document.addEventListener('DOMContentLoaded', function () {
+      sweepRecent(); setInterval(sweepRecent, 2500);
+      try { new MutationObserver(function () { clearTimeout(window.__pvRecT); window.__pvRecT = setTimeout(sweepRecent, 250); }).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) {}
+    });
+  }
+
   /* ---------- 4. Block script-created popups / window.open spam ---------- */
   try {
     var _open = window.open;

@@ -137,6 +137,7 @@ public class MainActivity extends Activity {
     int settingsDepth = 0;
     volatile boolean uiOverlay = false;
     boolean manualFs = false;
+    long lastDlNotify = 0;
     boolean barOn = false, barTopLight = false, barBotLight = false;
     int barTop = 0, barBot = 0;
     String lastLoadUrl = "";
@@ -1321,6 +1322,10 @@ public class MainActivity extends Activity {
     }
 
     void startDownload(String url, String ua, String cd, String mime, String referer) {
+        startDownload(url, ua, cd, mime, referer, null);
+    }
+
+    void startDownload(String url, String ua, String cd, String mime, String referer, String nameHint) {
         if (url == null || !(url.startsWith("http://") || url.startsWith("https://"))) {
             toast("This file can't be downloaded");
             return;
@@ -1347,6 +1352,8 @@ public class MainActivity extends Activity {
             if (referer != null && referer.startsWith("http")) r.addRequestHeader("Referer", referer);
             r.addRequestHeader("Accept", "*/*");
             String fn = fixName(URLUtil.guessFileName(url, cd, mime), mime);
+            String hint = cleanTitle(nameHint);
+            if (!hint.isEmpty()) fn = hint + extOf(url, fn);
             r.setTitle(fn);
             r.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
             r.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, setting("dlDest", "public").equals("pravah") ? "Pravah/" + fn : fn);
@@ -1380,16 +1387,52 @@ public class MainActivity extends Activity {
         return fn;
     }
 
+    static String cleanTitle(String t) {
+        if (t == null) return "";
+        String s = t.replaceAll("[\\\\/:*?\"<>|\\r\\n\\t]", " ").replaceAll("\\s+", " ").trim();
+        if (s.length() > 90) s = s.substring(0, 90).trim();
+        return s;
+    }
+
+    static String extOf(String url, String fn) {
+        String low = url == null ? "" : url.toLowerCase(java.util.Locale.ROOT);
+        int q = low.indexOf('?');
+        if (q > 0) low = low.substring(0, q);
+        String[] exts = {".mp4", ".webm", ".mkv", ".mov", ".m4v", ".flv", ".3gp"};
+        for (String e : exts) if (low.endsWith(e)) return e;
+        int d = fn == null ? -1 : fn.lastIndexOf('.');
+        if (d > 0 && fn.length() - d <= 5) return fn.substring(d);
+        return ".mp4";
+    }
+
+    void startDlService() {
+        try {
+            Intent si = new Intent(this, DownloadService.class);
+            if (Build.VERSION.SDK_INT >= 26) startForegroundService(si);
+            else startService(si);
+        } catch (Exception ignored) {
+        }
+    }
+
+    void stopDlServiceIfIdle() {
+        if (!hlsActive.isEmpty()) return;
+        try {
+            stopService(new Intent(this, DownloadService.class));
+        } catch (Exception ignored) {
+        }
+    }
+
     /** Download request coming from a video on the page: direct file, HLS stream, or whatever the page loaded. */
     void smartDownload(final String v, final Tab t) {
         final String page = t != null && t.url != null ? t.url : "";
+        final String ttl = t != null ? t.title : null;
         final String low = v == null ? "" : v.toLowerCase(java.util.Locale.ROOT);
         if (low.startsWith("http") && !low.contains(".m3u8") && !low.contains(".mpd")) {
-            startDownload(v, userAgent(false), null, null, page);
+            startDownload(v, userAgent(false), null, null, page, ttl);
             return;
         }
         if (low.startsWith("http") && low.contains(".m3u8")) {
-            startHls(v, page);
+            chooseHls(v, page, ttl);
             return;
         }
         final ArrayList<String> found = new ArrayList<>();
@@ -1435,9 +1478,9 @@ public class MainActivity extends Activity {
                 main.post(new Runnable() {
                     @Override
                     public void run() {
-                        if (file != null) startDownload(file, userAgent(false), null, "video/mp4", page);
-                        else if (hls != null) startHls(hls, page);
-                        else if (fallback != null) startDownload(fallback, userAgent(false), null, "video/mp4", page);
+                        if (file != null) startDownload(file, userAgent(false), null, "video/mp4", page, ttl);
+                        else if (hls != null) chooseHls(hls, page, ttl);
+                        else if (fallback != null) startDownload(fallback, userAgent(false), null, "video/mp4", page, ttl);
                         else toast("This video can't be downloaded");
                     }
                 });
@@ -1445,14 +1488,54 @@ public class MainActivity extends Activity {
         }).start();
     }
 
-    void startHls(final String playlistUrl, final String referer) {
+    /** Streaming video: let the person pick the quality when several are offered. */
+    void chooseHls(final String hlsUrl, final String page, final String title) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                final HlsDownloader probe = new HlsDownloader(MainActivity.this, baseUa, page);
+                final ArrayList<String[]> vs = probe.variants(hlsUrl);
+                main.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (vs.size() <= 1) {
+                            startHls(vs.size() == 1 ? vs.get(0)[1] : hlsUrl, page, title);
+                            return;
+                        }
+                        final String[] labels = new String[vs.size()];
+                        for (int i = 0; i < labels.length; i++) labels[i] = vs.get(i)[0];
+                        new AlertDialog.Builder(MainActivity.this)
+                                .setTitle("Choose quality")
+                                .setItems(labels, new android.content.DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(android.content.DialogInterface d, int which) {
+                                        startHls(vs.get(which)[1], page, title);
+                                    }
+                                })
+                                .setNegativeButton("Cancel", null)
+                                .show();
+                    }
+                });
+            }
+        }).start();
+    }
+
+    void startHls(String playlistUrl, String referer) {
+        startHls(playlistUrl, referer, cur != null ? cur.title : null);
+    }
+
+    void startHls(final String playlistUrl, final String referer, final String title) {
         final long id = -System.currentTimeMillis();
+        String base = cleanTitle(title);
+        final String nameBase = base.isEmpty() ? "" : base;
+        final String shown = (nameBase.isEmpty() ? "Pravah video" : nameBase) + ".mp4";
         try {
             JSONObject o = new JSONObject();
             o.put("id", id);
-            o.put("name", "Pravah video.mp4");
+            o.put("name", shown);
             o.put("url", playlistUrl);
             o.put("ref", referer == null ? "" : referer);
+            o.put("ttl", title == null ? "" : title);
             o.put("t", System.currentTimeMillis());
             o.put("local", true);
             o.put("status", "running");
@@ -1468,13 +1551,14 @@ public class MainActivity extends Activity {
             return;
         }
         hlsActive.add(id);
+        startDlService();
         toast("Video download started");
         if (mode.equals("downloads")) pushDownloads();
         final HlsDownloader job = new HlsDownloader(this, baseUa, referer);
         new Thread(new Runnable() {
             @Override
             public void run() {
-                job.run(playlistUrl, new HlsDownloader.Listener() {
+                job.run(playlistUrl, nameBase, new HlsDownloader.Listener() {
                     @Override
                     public void progress(long done, long total) {
                         updLocal(id, "running", done, total, null, null, null);
@@ -1482,7 +1566,7 @@ public class MainActivity extends Activity {
 
                     @Override
                     public void done(String name, String uri, long size) {
-                        updLocal(id, "done", size, size, name, uri, "Saved in Downloads/Pravah");
+                        updLocal(id, "done", size, size, name, uri, "Saved: " + name);
                     }
 
                     @Override
@@ -1512,10 +1596,20 @@ public class MainActivity extends Activity {
                         break;
                     }
                 }
-                if (!status.equals("running")) {
+                if (status.equals("running")) {
+                    long now = SystemClock.elapsedRealtime();
+                    if (now - lastDlNotify > 1200) {
+                        lastDlNotify = now;
+                        int pct = total > 0 ? (int) Math.min(99, done * 100 / total) : -1;
+                        String txt = hlsActive.size() > 1 ? hlsActive.size() + " videos downloading" : "Downloading video" + (pct >= 0 ? " - " + pct + "%" : "...");
+                        DownloadService.post(MainActivity.this, txt, pct);
+                    }
+                } else {
                     hlsActive.remove(id);
                     saveSoon();
                     if (say != null) toast(say);
+                    if (status.equals("done")) DownloadService.done(MainActivity.this, name == null ? "Video saved" : name);
+                    stopDlServiceIfIdle();
                     if (mode.equals("downloads")) pushDownloads();
                 }
             }
@@ -1547,13 +1641,65 @@ public class MainActivity extends Activity {
                 i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                 startActivity(Intent.createChooser(i, "Share"));
             } else {
-                Intent i = new Intent(Intent.ACTION_VIEW);
-                i.setDataAndType(u, mime);
-                i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
-                startActivity(i);
+                playInApp(us, r.optString("name"), null);
             }
         } catch (Exception e) {
             toast("No app found to open this file");
+        }
+    }
+
+    /** Opens Pravah's own player (5 / 10 second jumps, pause, speed, swipe gestures). */
+    void playInApp(String uri, String title, String referer) {
+        try {
+            Intent i = new Intent(this, PlayerActivity.class);
+            i.putExtra("uri", uri);
+            i.putExtra("title", title == null ? "" : title);
+            i.putExtra("ua", baseUa);
+            if (referer != null) i.putExtra("referer", referer);
+            ArrayList<String> us = new ArrayList<>(), ts = new ArrayList<>();
+            collectVideos(us, ts);
+            if (us.contains(uri)) {
+                i.putStringArrayListExtra("list_uris", us);
+                i.putStringArrayListExtra("list_titles", ts);
+            }
+            startActivity(i);
+        } catch (Exception e) {
+            toast("Could not open the player");
+        }
+    }
+
+    void collectVideos(ArrayList<String> us, ArrayList<String> ts) {
+        DownloadManager d = dm();
+        for (int i = 0; i < dls.length(); i++) {
+            JSONObject o = dls.optJSONObject(i);
+            if (o == null) continue;
+            if (o.optBoolean("local")) {
+                if ("done".equals(o.optString("status")) && !o.optString("uri").isEmpty()) {
+                    us.add(o.optString("uri"));
+                    ts.add(o.optString("name"));
+                }
+                continue;
+            }
+            if (d == null) continue;
+            Cursor c = null;
+            try {
+                c = d.query(new DownloadManager.Query().setFilterById(o.optLong("id")));
+                if (c != null && c.moveToFirst()) {
+                    int st = c.getInt(c.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS));
+                    String mt = c.getString(c.getColumnIndexOrThrow(DownloadManager.COLUMN_MEDIA_TYPE));
+                    if (st == DownloadManager.STATUS_SUCCESSFUL && mt != null && mt.startsWith("video/")) {
+                        Uri u = d.getUriForDownloadedFile(o.optLong("id"));
+                        if (u != null) {
+                            us.add(u.toString());
+                            String ti = c.getString(c.getColumnIndexOrThrow(DownloadManager.COLUMN_TITLE));
+                            ts.add(ti == null ? "Video" : ti);
+                        }
+                    }
+                }
+            } catch (Exception ignored) {
+            } finally {
+                if (c != null) c.close();
+            }
         }
     }
 
@@ -1674,6 +1820,13 @@ public class MainActivity extends Activity {
                 i.putExtra(Intent.EXTRA_STREAM, u);
                 i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                 startActivity(Intent.createChooser(i, "Share"));
+            } else if (mime.startsWith("video/")) {
+                String tt = null;
+                for (int k = 0; k < dls.length(); k++) {
+                    JSONObject ro = dls.optJSONObject(k);
+                    if (ro != null && ro.optLong("id") == id) tt = ro.optString("name", null);
+                }
+                playInApp(u.toString(), tt == null || tt.isEmpty() ? "Video" : tt, null);
             } else {
                 Intent i = new Intent(Intent.ACTION_VIEW);
                 i.setDataAndType(u, mime);
@@ -1804,6 +1957,26 @@ public class MainActivity extends Activity {
             String v = u.getQueryParameter("v");
             addPlaylist(u.getQueryParameter("u"), u.getQueryParameter("t"));
             if ("1".equals(u.getQueryParameter("dl"))) smartDownload(v == null ? "" : v, cur);
+        } else if (a.equals("play")) {
+            String v = u.getQueryParameter("u");
+            String tt = u.getQueryParameter("t");
+            String title = (tt == null || tt.isEmpty()) ? (cur != null ? cur.title : "") : tt;
+            String page = cur != null ? cur.url : null;
+            if (v != null && v.startsWith("http")) {
+                playInApp(v, title, page);
+            } else {
+                String pick = null;
+                if (cur != null) {
+                    synchronized (cur.media) {
+                        for (int i = cur.media.size() - 1; i >= 0 && pick == null; i--) {
+                            if (cur.media.get(i).toLowerCase(java.util.Locale.ROOT).contains(".m3u8")) pick = cur.media.get(i);
+                        }
+                        for (int i = cur.media.size() - 1; i >= 0 && pick == null; i--) pick = cur.media.get(i);
+                    }
+                }
+                if (pick != null) playInApp(pick, title, page);
+                else toast("Press play on the video first, then try again.");
+            }
         } else if (a.equals("search")) {
             String q = u.getQueryParameter("q");
             if (q != null && !q.isEmpty()) {

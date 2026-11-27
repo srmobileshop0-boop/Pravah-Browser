@@ -1318,6 +1318,7 @@ function applyLook(){
   de.classList.toggle('wpOn',!!bg);
   de.classList.toggle('wpShow',!!bg&&(S.mode==='home'||S.mode==='about'));
   if(window.syncBars)window.syncBars();
+  if(S.mode==='home'&&window.scLayout)requestAnimationFrame(window.scLayout);
 }
 
 /* ---------- about ---------- */

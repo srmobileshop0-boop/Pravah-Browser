@@ -105,7 +105,7 @@ final class HlsDownloader {
 
     private byte[] get(String u) throws IOException {
         IOException last = null;
-        for (int attempt = 0; attempt < 3; attempt++) {
+        for (int attempt = 0; attempt < 5; attempt++) {
             String cur = u;
             HttpURLConnection c = null;
             try {
@@ -133,7 +133,7 @@ final class HlsDownloader {
             } catch (IOException e) {
                 last = e;
                 try {
-                    Thread.sleep(500);
+                    Thread.sleep(400L * (attempt + 1));
                 } catch (InterruptedException ignored) {
                 }
             } finally {
@@ -145,6 +145,55 @@ final class HlsDownloader {
 
     private String text(String u) throws IOException {
         return new String(get(u), "UTF-8");
+    }
+
+    private byte[] fetchSeg(Seg g) throws IOException {
+        byte[] d = get(g.url);
+        if (g.key != null) {
+            try {
+                Cipher c = Cipher.getInstance("AES/CBC/PKCS5Padding");
+                c.init(Cipher.DECRYPT_MODE, new SecretKeySpec(g.key, "AES"), new IvParameterSpec(g.iv));
+                d = c.doFinal(d);
+            } catch (Exception e) {
+                throw new IOException("decrypt failed");
+            }
+        }
+        return d;
+    }
+
+    /** Qualities of a master playlist as {label, url, bandwidth}, best first. Empty when it is not a master playlist. */
+    ArrayList<String[]> variants(String url) {
+        ArrayList<String[]> out = new ArrayList<>();
+        try {
+            String body = text(url);
+            if (!body.contains("#EXT-X-STREAM-INF")) return out;
+            String[] ls = body.split("\\r?\\n");
+            for (int i = 0; i < ls.length; i++) {
+                String s = ls[i].trim();
+                if (!s.startsWith("#EXT-X-STREAM-INF")) continue;
+                String res = attr(s, "RESOLUTION");
+                long bw = attrLong(s, "BANDWIDTH");
+                for (int j = i + 1; j < ls.length; j++) {
+                    String u = ls[j].trim();
+                    if (u.isEmpty() || u.startsWith("#")) continue;
+                    String label = "Video";
+                    if (res != null && res.indexOf('x') > 0) label = res.substring(res.indexOf('x') + 1).trim() + "p";
+                    else if (bw > 0) label = (bw / 1000) + " kbps";
+                    boolean dup = false;
+                    for (String[] o : out) if (o[0].equals(label)) dup = true;
+                    if (!dup) out.add(new String[]{label, resolve(url, u), String.valueOf(Math.max(bw, 0))});
+                    break;
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        java.util.Collections.sort(out, new java.util.Comparator<String[]>() {
+            @Override
+            public int compare(String[] a, String[] b) {
+                return Long.compare(Long.parseLong(b[2]), Long.parseLong(a[2]));
+            }
+        });
+        return out;
     }
 
     // ---------------------------------------------------------- helpers for the caller
@@ -224,7 +273,7 @@ final class HlsDownloader {
 
     // ------------------------------------------------------------------ main job
 
-    void run(String playlistUrl, Listener l) {
+    void run(String playlistUrl, String nameBase, Listener l) {
         try {
             String base = playlistUrl;
             String body = text(base);
@@ -313,28 +362,45 @@ final class HlsDownloader {
             File tmp = new File(ctx.getCacheDir(), "hls_" + System.nanoTime() + ".bin");
             long written = 0;
             OutputStream os = new BufferedOutputStream(new FileOutputStream(tmp), 1 << 16);
+            java.util.concurrent.ExecutorService pool = java.util.concurrent.Executors.newFixedThreadPool(4);
             try {
                 if (mapUrl != null) {
                     byte[] init = get(mapUrl);
                     os.write(init);
                     written += init.length;
                 }
+                java.util.ArrayDeque<java.util.concurrent.Future<byte[]>> q = new java.util.ArrayDeque<>();
+                int next = 0;
                 for (int i = 0; i < segs.size(); i++) {
-                    Seg g = segs.get(i);
-                    byte[] d = get(g.url);
-                    if (g.key != null) {
-                        try {
-                            Cipher c = Cipher.getInstance("AES/CBC/PKCS5Padding");
-                            c.init(Cipher.DECRYPT_MODE, new SecretKeySpec(g.key, "AES"), new IvParameterSpec(g.iv));
-                            d = c.doFinal(d);
-                        } catch (Exception e) {
-                            throw new IOException("decrypt failed");
-                        }
+                    while (next < segs.size() && q.size() < 8) {
+                        final Seg g = segs.get(next++);
+                        q.add(pool.submit(new java.util.concurrent.Callable<byte[]>() {
+                            @Override
+                            public byte[] call() throws Exception {
+                                return fetchSeg(g);
+                            }
+                        }));
                     }
+                    byte[] d = q.poll().get();
                     os.write(d);
                     written += d.length;
                     l.progress(written, written * segs.size() / (i + 1));
                 }
+            } catch (java.util.concurrent.ExecutionException e) {
+                try {
+                    os.close();
+                } catch (IOException ignored) {
+                }
+                tmp.delete();
+                Throwable c = e.getCause();
+                throw (c instanceof IOException) ? (IOException) c : new IOException("segment failed");
+            } catch (InterruptedException e) {
+                try {
+                    os.close();
+                } catch (IOException ignored) {
+                }
+                tmp.delete();
+                throw new IOException("cancelled");
             } catch (IOException e) {
                 try {
                     os.close();
@@ -342,11 +408,13 @@ final class HlsDownloader {
                 }
                 tmp.delete();
                 throw e;
+            } finally {
+                pool.shutdownNow();
             }
             os.close();
 
             String stamp = new java.text.SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(new java.util.Date());
-            String name = "Pravah_" + stamp;
+            String name = (nameBase == null || nameBase.trim().isEmpty()) ? "Pravah_" + stamp : nameBase.trim();
             if (mapUrl != null) {
                 finishRaw(tmp, name + ".mp4", "video/mp4", l);
                 return;

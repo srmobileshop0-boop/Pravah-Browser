@@ -301,6 +301,7 @@ function posOf(s,i,m){return(s.y!=null&&s.xf!=null)?[s.xf*(m.W-TW),s.y]:defPos(i
 function setPos(el,x,y){el.style.transform=`translate(${Math.round(x)}px,${Math.round(y)}px)`;el._x=x;el._y=y}
 function layout(skip){
   const m=metrics();
+  if(!m.W||m.W<50)return;
   layer.querySelectorAll('.tile').forEach(t=>{
     if(t===skip)return;
     const i=+t.dataset.i,s=window.SC[i];if(!s)return;
@@ -403,6 +404,8 @@ document.getElementById('p-home').addEventListener('click',e=>{
   if(ov.edit&&!e.target.closest('#sites')&&!e.target.closest('.sacts')&&!justDragged)exitEdit();
 });
 window.addEventListener('resize',()=>layout());
+try{new ResizeObserver(()=>{if(!drag)layout()}).observe(hc)}catch(e){}
+window.scLayout=()=>{if(!drag)layout()};
 /* ---- add a shortcut ---- */
 const ad=document.getElementById('addsc');
 function openAdd(){ov.add=true;ad.classList.add('on');document.getElementById('as-n').value='';document.getElementById('as-u').value='';ovSync();setTimeout(()=>document.getElementById('as-n').focus(),80)}

@@ -113,7 +113,7 @@
       tb.id = '__pvtb';
       tb.style.cssText = 'position:fixed;z-index:2147483646;display:none;align-items:center;gap:4px;padding:3px 8px;border-radius:22px;background:linear-gradient(135deg,#ff5a6e,#e0115f);box-shadow:0 4px 14px rgba(0,0,0,.35);-webkit-tap-highlight-color:transparent';
       var b = function (a, svg) { return '<span data-a="' + a + '" style="width:38px;height:36px;display:flex;align-items:center;justify-content:center">' + svg + '</span>'; };
-      tb.innerHTML = b('dl', ic('<path d="M12 4v11m0 0l-4-4m4 4l4-4M5 19h14"/>')) +
+      tb.innerHTML = b('pl', ic('<path d="M8 5.5v13l11-6.5z" fill="#fff"/>')) + b('dl', ic('<path d="M12 4v11m0 0l-4-4m4 4l4-4M5 19h14"/>')) +
         b('fs', ic('<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>')) +
         b('sp', ic('<circle cx="12" cy="5" r="1.3" fill="#fff"/><circle cx="12" cy="12" r="1.3" fill="#fff"/><circle cx="12" cy="19" r="1.3" fill="#fff"/>'));
       tb.addEventListener('click', function (e) {
@@ -121,7 +121,9 @@
         if (!s || !cur) return;
         e.preventDefault(); e.stopPropagation();
         var a = s.getAttribute('data-a');
-        if (a === 'dl') {
+        if (a === 'pl') {
+          act('play', { u: srcOf(cur) || '', t: document.title || '' });
+        } else if (a === 'dl') {
           var u = srcOf(cur);
           act('download', { u: u });
           toast(u && !/\.(m3u8|mpd)(\?|$)/i.test(u) ? 'Download started' : 'Getting the video...');
