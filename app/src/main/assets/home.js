@@ -431,8 +431,8 @@ ad.addEventListener('click',e=>{if(e.target===ad)closeAdd()});
 /* ---- quick-topic chips ---- */
 const CATS=[['📰','News','latest news today','#FFF1E0','#B85C00'],['🏏','Cricket','live cricket score','#E6F6EC','#12713B'],['🎬','Movies','new movies','#F1EAFF','#6234C9'],['🌦️','Weather','weather today','#E4F2FF','#1B64B8'],['📱','Recharge','mobile recharge plans','#FFE9EF','#C2185B'],['🗺️','Maps','https://maps.google.com','#E5F7F4','#0F766E'],['🛍️','Shopping','https://www.flipkart.com','#FFF6D6','#9A6700'],['🎵','Music','https://m.youtube.com/results?search_query=new+songs','#FDE8E8','#C0262D']];
 const catsEl=document.getElementById('cats');
-catsEl.innerHTML=CATS.map((c,i)=>`<button class="cat" data-i="${i}" style="--c:${c[3]};--t:${c[4]}"><i>${c[0]}</i>${c[1]}</button>`).join('');
-catsEl.onclick=e=>{const b=e.target.closest('.cat');if(!b)return;const c=CATS[+b.dataset.i];if(/^https?:/.test(c[2]))N.open(c[2]);else N.go(c[2],(S.settings&&S.settings.engine)||'google')};
+if(catsEl){catsEl.innerHTML=CATS.map((c,i)=>`<button class="cat" data-i="${i}" style="--c:${c[3]};--t:${c[4]}"><i>${c[0]}</i>${c[1]}</button>`).join('');
+catsEl.onclick=e=>{const b=e.target.closest('.cat');if(!b)return;const c=CATS[+b.dataset.i];if(/^https?:/.test(c[2]))N.open(c[2]);else N.go(c[2],(S.settings&&S.settings.engine)||'google')};}
 
 /* ================= toast ================= */
 let toastT=0;

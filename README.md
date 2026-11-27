@@ -77,3 +77,9 @@ Fast, private, ad-free Android browser. Created by Anil Yadav.
 - Pravah Player: tap a downloaded video to play it with -10 / -5 / +5 / +10 second buttons, pause, speed, double-tap to jump, swipe for volume / brightness / seek, resume position, Prev / Next
 - "Play" button on the video toolbar plays a web video (also streaming) in Pravah Player
 - Google: the x next to a recent search removes it (and keeps it removed)
+
+## v2.1
+- Fixed: download names were invisible (a CSS name clash) - names show again, up to two lines
+- Pravah Player: mute, lock, screenshot (saved to Pictures/Pravah), rotate, speed, aspect ratio (fit / fill / stretch / 16:9 / 4:3), floating pop-up window, prev / next, nicer seek bar
+- Streaming downloads are now re-wrapped into a clean MP4 (key frames + continuous timestamps) so seeking works
+- Start page: News / Cricket / Movies chips removed, new "Search with" pills (tap to choose the engine, search right away if text is typed), Bookmarks / History / Downloads / Playlist as coloured cards above Shortcuts

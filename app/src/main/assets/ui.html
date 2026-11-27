@@ -643,9 +643,9 @@ html.wpShow #p-about .abh2 h2{background:none;-webkit-text-fill-color:#fff;color
 .dtag{display:inline-block;margin-top:8px;padding:4px 10px;border-radius:12px;background:rgba(255,255,255,.18);font-size:12px;font-weight:800}
 .dmsg{margin:14px 2px 14px;font-size:14px;line-height:1.55;opacity:.92}
 .dlinks{display:flex;flex-direction:column;gap:10px}
-.dl{display:flex;align-items:center;gap:12px;text-align:left;padding:10px 12px;border-radius:18px;border:0;background:rgba(255,255,255,.14);color:#fff}
-.dl .fi2{width:38px;height:38px;border-radius:13px;box-shadow:none}.dl .fi2 svg{width:21px;height:21px}
-.dl b{display:block;font-size:15px}.dl small{display:block;opacity:.8;font-size:12.5px;margin-top:1px}
+.dlk{display:flex;align-items:center;gap:12px;text-align:left;padding:10px 12px;border-radius:18px;border:0;background:rgba(255,255,255,.14);color:#fff}
+.dlk .fi2{width:38px;height:38px;border-radius:13px;box-shadow:none}.dl .fi2 svg{width:21px;height:21px}
+.dlk b{display:block;font-size:15px}.dlk small{display:block;opacity:.8;font-size:12.5px;margin-top:1px}
 html.wpShow #p-about .abtn2{background:rgba(255,255,255,.16);color:#fff;border-color:rgba(255,255,255,.28)}
 html.wpShow #p-about .dev{box-shadow:none;border:1px solid rgba(255,255,255,.25);background:linear-gradient(135deg,rgba(10,44,150,.8),rgba(27,71,214,.75) 60%,rgba(15,122,58,.8))}
 html.wpShow #p-about .nw .nwi{border-color:rgba(255,255,255,.2)}
@@ -662,6 +662,31 @@ html.wpShow #p-about .nw .nwi{border-color:rgba(255,255,255,.2)}
 .mh-q b{height:22px;border-radius:9px;background:rgba(120,130,160,.16)}
 .mh.wp .mh-q b{background:rgba(255,255,255,.22)}
 .nw .dot{display:block;width:9px;height:9px;min-width:9px;border-radius:50%!important;padding:0;margin-top:7px}
+/* ---------- v2.1: engines, quick cards ---------- */
+.engw{margin-top:14px}
+.engl{font-size:12.5px;font-weight:800;letter-spacing:.4px;color:#6B7280;margin:0 6px 7px}
+#p-home.wp .engl{color:rgba(255,255,255,.85)}
+#p-home .engs{display:flex;gap:9px;margin:0;padding:0;background:none!important;box-shadow:none!important;border:0;border-radius:0;-webkit-backdrop-filter:none;backdrop-filter:none}
+#p-home .eng{flex:1;height:52px;border-radius:26px;border:1.5px solid rgba(15,23,42,.10);background:#fff;color:#374151;font-size:13.5px;font-weight:800;gap:7px;padding:0 6px;box-shadow:0 5px 14px rgba(34,60,160,.10);position:relative}
+#p-home .eng .fv,#p-home .eng>svg,#p-home .eng>img{flex:none}
+#p-home .eng.sel{background:#fff;color:#14161C;border:1.5px solid transparent;background-image:linear-gradient(#fff,#fff),linear-gradient(90deg,#FF9933,#2F6BFF 55%,#138808);background-origin:border-box;background-clip:padding-box,border-box;box-shadow:0 10px 22px rgba(47,107,255,.25)}
+#p-home .eng.sel::after{display:none}
+#p-home .eng .ck{position:absolute;top:-7px;right:6px;width:19px;height:19px;border-radius:50%;background:#138808;color:#fff;font-style:normal;font-size:11px;font-weight:900;display:grid;place-items:center;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+#p-home.wp .eng{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.30);color:#fff;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:none}
+#p-home.wp .eng.sel{background-image:linear-gradient(rgba(255,255,255,.96),rgba(255,255,255,.96)),linear-gradient(90deg,#FF9933,#2F6BFF 55%,#138808);color:#14161C}
+.quick{margin-top:16px!important}
+.quick button{border-radius:22px!important;padding:13px 2px 11px!important;gap:8px!important;background:#fff;border:1px solid rgba(15,23,42,.07)!important;box-shadow:0 8px 20px rgba(34,60,160,.10)!important;font-size:12px!important;font-weight:800!important;color:#14161C!important}
+.quick button .ic{width:46px!important;height:46px!important;padding:11px!important;border-radius:16px!important;box-sizing:border-box;color:#fff!important}
+.quick button:nth-child(1) .ic{background:linear-gradient(135deg,#FFB547,#F08A00)!important}
+.quick button:nth-child(2) .ic{background:linear-gradient(135deg,#6C8CFF,#3452D9)!important}
+.quick button:nth-child(3) .ic{background:linear-gradient(135deg,#34C77B,#12A05B)!important}
+.quick button:nth-child(4) .ic{background:linear-gradient(135deg,#FF77B7,#E0449A)!important}
+.quick button .ic{box-shadow:0 6px 12px rgba(0,0,0,.18)}
+#p-home.wp .quick button{background:rgba(255,255,255,.16)!important;border-color:rgba(255,255,255,.28)!important;color:#fff!important;box-shadow:none!important;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+#hc{padding-bottom:120px}
+.hint{margin:10px 0 0!important}
+#p-home .eng>:first-child{background:#fff;border-radius:50%;padding:3px;box-sizing:content-box;flex:none}
+.row.dl .t{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.3}
 </style>
 </head>
 <body>
@@ -767,16 +792,15 @@ html.wpShow #p-about .nw .nwi{border-color:rgba(255,255,255,.2)}
        <input id="hq" type="text" placeholder="Search or type a URL" enterkeyhint="search" autocomplete="off" autocapitalize="off" spellcheck="false">
        <button class="go" id="hgo" aria-label="Search"><svg class="ic"><use href="#fwd"/></svg></button>
      </div>
-     <div class="engs" id="engs"></div>
-     <div class="cats" id="cats"></div>
-     <div class="scard"><div class="sch"><b>Shortcuts</b><span class="sacts"><button id="sc-shape" aria-label="Icon shape"></button><button id="sc-add">+ Add</button><button id="sc-reset">Reset</button><button id="sc-done" class="dn">Done</button></span></div><div class="sarea" id="sarea"></div></div>
-     <div class="hint">Touch &amp; hold a shortcut, then drag it anywhere on this page</div>
+     <div class="engw"><div class="engl">Search with</div><div class="engs" id="engs"></div></div>
      <div class="quick">
        <button id="q-bm"><svg class="ic"><use href="#o-bm"/></svg>Bookmarks</button>
        <button id="q-hi"><svg class="ic"><use href="#o-clock"/></svg>History</button>
        <button id="q-dl"><svg class="ic"><use href="#o-dl"/></svg>Downloads</button>
        <button id="q-pl"><svg class="ic"><use href="#o-play"/></svg>Playlist</button>
      </div>
+     <div class="scard"><div class="sch"><b>Shortcuts</b><span class="sacts"><button id="sc-shape" aria-label="Icon shape"></button><button id="sc-add">+ Add</button><button id="sc-reset">Reset</button><button id="sc-done" class="dn">Done</button></span></div><div class="sarea" id="sarea"></div></div>
+     <div class="hint">Touch &amp; hold a shortcut, then drag it anywhere on this page</div>
      <div id="sites"></div>
    </div></div>
  </section>
@@ -893,9 +917,10 @@ const SITES=[
 ];
 
 /* ---------- build static home ---------- */
-$('#engs').innerHTML=['google','bing','yahoo'].map(k=>`<button class="eng" data-e="${k}">${engIco(k,20)}${ENG[k].n}</button>`).join('');
+function renderEngs(){const cur=(S.settings&&S.settings.engine)||'google';$('#engs').innerHTML=['google','bing','yahoo'].map(k=>`<button class="eng${cur===k?' sel':''}" data-e="${k}">${engIco(k,22)}<span>${ENG[k].n}</span>${cur===k?'<i class="ck">&#10003;</i>':''}</button>`).join('')}
+renderEngs();
 function homeSearch(eng){const v=$('#hq').value.trim();$('#hq').blur();N.go(v||(ENG[eng]||ENG.google).home,eng)}
-$('#engs').onclick=e=>{const b=e.target.closest('.eng');if(b)homeSearch(b.dataset.e)};
+$('#engs').onclick=e=>{const b=e.target.closest('.eng');if(!b)return;const k=b.dataset.e;N.setSetting('engine',k);const v=$('#hq').value.trim();if(v)homeSearch(k);else $('#hq').focus()};
 $('#hq').onkeydown=e=>{if(e.key==='Enter')homeSearch(S.settings.engine||'google')};
 $('#hgo').onclick=()=>homeSearch(S.settings.engine||'google');
 $('#h-set').onclick=()=>N.nav('settings','');
@@ -907,7 +932,7 @@ $$('.back').forEach(b=>b.onclick=()=>N.nav('back',''));
 function accList(){try{const a=JSON.parse(S.settings.accounts||'[]');return Array.isArray(a)?a:[]}catch(e){return[]}}
 function curAccount(){const id=S.settings.session||'';return id?(accList().find(x=>x.id===id)||null):null}
 function updateGreet(){try{$('#gdate').textContent=new Date().toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'})}catch(e){}const h=new Date().getHours();const g=h<5?'Good night':h<12?'Good morning':h<17?'Good afternoon':h<21?'Good evening':'Good night',ac=curAccount(),fn=ac?ac.name.split(' ')[0]:'';$('#greet').textContent=g+(fn&&fn.length<=8?', '+fn:'')}
-function updateHome(){updateGreet();if(window.scSync)window.scSync();$$('.eng').forEach(b=>b.classList.toggle('sel',b.dataset.e===S.settings.engine))}
+function updateHome(){updateGreet();renderEngs();if(window.scSync)window.scSync();$$('.eng').forEach(b=>b.classList.toggle('sel',b.dataset.e===S.settings.engine))}
 
 /* ---------- bottom bar ---------- */
 let tabList=false,tabPriv=false,tabQuery='';
@@ -1361,8 +1386,8 @@ function renderAbout(){
   <div class="sec">Developer</div>
   <div class="dev"><div class="dtop"><div class="dav">AY</div><div class="dt"><b>Anil Yadav</b><small>Creator &amp; developer of Pravah Browser</small><span class="dtag">🇮🇳 Made in India</span></div></div>
     <p class="dmsg">Pravah was built with love to give everyone a fast, clean and private way to browse. Thank you for using it!</p>
-    <div class="dlinks"><button class="dl" data-open="https://anilyadavapps.blogspot.com">${fico('globe','#3EA9FF','#1F7AE0')}<span><b>More apps</b><small>anilyadavapps.blogspot.com</small></span></button>
-    <button class="dl" data-open="https://www.instagram.com/_anilyadavofficial">${fico('insta','#F58529','#DD2A7B')}<span><b>Instagram</b><small>@_anilyadavofficial</small></span></button></div></div>
+    <div class="dlinks"><button class="dlk" data-open="https://anilyadavapps.blogspot.com">${fico('globe','#3EA9FF','#1F7AE0')}<span><b>More apps</b><small>anilyadavapps.blogspot.com</small></span></button>
+    <button class="dlk" data-open="https://www.instagram.com/_anilyadavofficial">${fico('insta','#F58529','#DD2A7B')}<span><b>Instagram</b><small>@_anilyadavofficial</small></span></button></div></div>
   <div class="foot">Pravah Browser v${esc(ver)} &middot; Fast &middot; Private &middot; Ad-free<br>Made with ${fico('heart','#FF6B8B','#E5484D').replace('class="fi2"','class="fi2 mini"')} in India</div>`;
 }
 $('#alist').onclick=e=>{const o=e.target.closest('[data-open]');if(o){N.open(o.dataset.open);return}const b=e.target.closest('[data-act]');if(b)sAct(b.dataset.act)};

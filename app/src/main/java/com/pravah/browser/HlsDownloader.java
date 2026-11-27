@@ -415,12 +415,13 @@ final class HlsDownloader {
 
             String stamp = new java.text.SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(new java.util.Date());
             String name = (nameBase == null || nameBase.trim().isEmpty()) ? "Pravah_" + stamp : nameBase.trim();
-            if (mapUrl != null) {
-                finishRaw(tmp, name + ".mp4", "video/mp4", l);
-                return;
-            }
+            // always re-wrap into a clean MP4 so seeking works; fall back to the raw file only if that fails
             if (remux(tmp, name + ".mp4", l)) {
                 tmp.delete();
+                return;
+            }
+            if (mapUrl != null) {
+                finishRaw(tmp, name + ".mp4", "video/mp4", l);
                 return;
             }
             finishRaw(tmp, name + ".ts", "video/mp2t", l);
@@ -500,6 +501,26 @@ final class HlsDownloader {
         }
     }
 
+    /** True when this video sample starts with an IDR frame (so the player can seek to it). */
+    private static boolean looksLikeIdr(ByteBuffer buf, int sz, String mime) {
+        int lim = Math.min(sz, 512);
+        boolean hevc = mime != null && mime.contains("hevc");
+        for (int i = 0; i + 4 < lim; i++) {
+            if (buf.get(i) == 0 && buf.get(i + 1) == 0 && (buf.get(i + 2) == 1 || (buf.get(i + 2) == 0 && buf.get(i + 3) == 1))) {
+                int p = buf.get(i + 2) == 1 ? i + 3 : i + 4;
+                if (p >= lim) break;
+                int b0 = buf.get(p) & 0xff;
+                if (hevc) {
+                    int type = (b0 >> 1) & 0x3f;
+                    if (type >= 16 && type <= 21) return true;
+                } else if ((b0 & 0x1f) == 5) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     /** Re-wraps an MPEG-TS file into a normal MP4 (no re-encoding). Returns false when that is not possible. */
     private boolean remux(File src, String name, Listener l) {
         Out o = null;
@@ -521,18 +542,24 @@ final class HlsDownloader {
                 mux = new MediaMuxer(o.file.getAbsolutePath(), MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
             }
             int[] map = new int[n];
+            boolean[] isVideo = new boolean[n];
+            String[] mimes = new String[n];
             int added = 0;
             boolean hasVideo = false;
             for (int i = 0; i < n; i++) {
                 map[i] = -1;
                 MediaFormat f = ex.getTrackFormat(i);
                 String mime = f.getString(MediaFormat.KEY_MIME);
+                mimes[i] = mime;
                 if (mime != null && (mime.startsWith("video/") || mime.startsWith("audio/"))) {
                     try {
                         map[i] = mux.addTrack(f);
                         ex.selectTrack(i);
                         added++;
-                        if (mime.startsWith("video/")) hasVideo = true;
+                        if (mime.startsWith("video/")) {
+                            hasVideo = true;
+                            isVideo[i] = true;
+                        }
                     } catch (Exception e) {
                         map[i] = -1;
                     }
@@ -543,15 +570,28 @@ final class HlsDownloader {
             started = true;
             ByteBuffer buf = ByteBuffer.allocate(4 * 1024 * 1024);
             MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
+            long[] lastT = new long[n];
+            long[] offT = new long[n];
+            long baseT = Long.MIN_VALUE;
             while (true) {
                 int sz = ex.readSampleData(buf, 0);
                 if (sz < 0) break;
                 int ti = ex.getSampleTrackIndex();
                 if (ti >= 0 && ti < n && map[ti] >= 0) {
+                    long t = ex.getSampleTime();
+                    if (baseT == Long.MIN_VALUE) baseT = t;
+                    long adj = t - baseT + offT[ti];
+                    // a stream that jumps back in time (joined segments) is made continuous again
+                    if (adj < lastT[ti] - 1000000L) {
+                        offT[ti] += lastT[ti] - adj + 33333L;
+                        adj = t - baseT + offT[ti];
+                    }
+                    if (adj > lastT[ti]) lastT[ti] = adj;
                     info.offset = 0;
                     info.size = sz;
-                    info.presentationTimeUs = ex.getSampleTime();
-                    info.flags = (ex.getSampleFlags() & MediaExtractor.SAMPLE_FLAG_SYNC) != 0 ? MediaCodec.BUFFER_FLAG_KEY_FRAME : 0;
+                    info.presentationTimeUs = Math.max(0L, adj);
+                    boolean key = (ex.getSampleFlags() & MediaExtractor.SAMPLE_FLAG_SYNC) != 0 || (isVideo[ti] && looksLikeIdr(buf, sz, mimes[ti]));
+                    info.flags = key ? MediaCodec.BUFFER_FLAG_KEY_FRAME : 0;
                     mux.writeSampleData(map[ti], buf, info);
                 }
                 ex.advance();
